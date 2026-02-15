@@ -4,7 +4,7 @@ import { BrowserWindow, ipcMain } from 'electron';
 let currentPty: pty.IPty | null = null;
 let mainWindow: BrowserWindow | null = null;
 
-// Cleanup function to clear references
+// Cleanup function to clear all references
 export function cleanupClaudeSession() {
   if (currentPty) {
     currentPty.kill();
@@ -23,14 +23,11 @@ export function setupClaudeCleanup(window: BrowserWindow) {
 export function setupClaudeIPC() {
   // Start Claude session with PTY
   ipcMain.handle('start-claude-session', async (event, projectPath: string) => {
+    // Clean up existing session first
+    cleanupClaudeSession();
+
     mainWindow = BrowserWindow.fromWebContents(event.sender);
     if (!mainWindow) return { success: false, error: 'Window not found' };
-
-    // Kill existing process if any
-    if (currentPty) {
-      currentPty.kill();
-      currentPty = null;
-    }
 
     try {
       // Get environment
@@ -65,13 +62,14 @@ export function setupClaudeIPC() {
 
       // Send output to renderer
       currentPty.onData((data) => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
+        // Double-check window exists and is not destroyed
+        if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
           mainWindow.webContents.send('claude-output', data);
         }
       });
 
       currentPty.onExit(({ exitCode }) => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
           mainWindow.webContents.send('claude-close', exitCode);
         }
         currentPty = null;
