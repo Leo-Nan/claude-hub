@@ -11,7 +11,13 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const isActiveRef = useRef(isActive);
   const listenersSetupRef = useRef(false);
+
+  // 保持 ref 与 state 同步
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -87,7 +93,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       }
       if (e.ctrlKey && e.key === 'v') {
         navigator.clipboard.readText().then((text) => {
-          if (text && isActive) {
+          if (text && isActiveRef.current) {
             term.paste(text);
           }
         });
@@ -97,7 +103,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
     });
 
     term.onData((data) => {
-      if (isActive) {
+      if (isActiveRef.current) {
         window.electronAPI.sendClaudeInput(data);
       }
     });
@@ -112,7 +118,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       window.removeEventListener('resize', handleResize);
       term.dispose();
     };
-  }, [projectPath, isActive]);
+  }, [projectPath]);
 
   const handleStartSession = async () => {
     if (!projectPath || !xtermRef.current) return;
