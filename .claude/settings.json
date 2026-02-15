@@ -3,6 +3,9 @@
   "model": "sonnet",
   "outputStyle": "Explanatory",
   "language": "chinese",
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "enabledPlugins": {
     "superpowers@superpowers-marketplace": true,
     "feature-dev@claude-plugins-official": true,
