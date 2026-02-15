@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
+import { SelectionModel } from 'xterm-addon-selection';
 import 'xterm/css/xterm.css';
 
 interface TerminalProps {
@@ -49,7 +50,9 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       theme: {
         background: '#1e1e1e',
         foreground: '#d4d4d4',
+        selectionBackground: 'rgba(255, 255, 255, 0.3)',
       },
+      allowProposedApi: true,
     });
 
     const fitAddon = new FitAddon();
@@ -69,8 +72,31 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       term.writeln('\x1b[31m请先选择项目\x1b[0m');
     }
 
+    // Enable mouse and key events for selection
+    term.options.mouseEnabled = true;
+    term.options.cursorBlink = true;
+
+    // Handle Ctrl+C to copy, Ctrl+V to paste
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.ctrlKey && e.key === 'c') {
+        const selection = term.getSelection();
+        if (selection) {
+          navigator.clipboard.writeText(selection);
+          return false;
+        }
+      }
+      if (e.ctrlKey && e.key === 'v') {
+        navigator.clipboard.readText().then((text) => {
+          if (text && isActive) {
+            term.paste(text);
+          }
+        });
+        return false;
+      }
+      return true;
+    });
+
     term.onData((data) => {
-      // Send input to Claude via IPC
       if (isActive) {
         window.electronAPI.sendClaudeInput(data);
       }
@@ -88,7 +114,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       window.removeEventListener('resize', handleResize);
       term.dispose();
     };
-  }, [projectPath, setupListeners]);
+  }, [projectPath, setupListeners, isActive]);
 
   const handleStartSession = async () => {
     if (!projectPath || !xtermRef.current) return;
@@ -129,6 +155,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
         }}
       >
         <span style={{ fontWeight: 500 }}>终端</span>
+        <span style={{ fontSize: '11px', color: '#888' }}>Ctrl+C 复制 | Ctrl+V 粘贴</span>
         {!isActive ? (
           <button
             onClick={handleStartSession}
