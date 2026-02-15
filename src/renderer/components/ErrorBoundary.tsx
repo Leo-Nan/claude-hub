@@ -29,16 +29,18 @@ class ErrorBoundary extends Component<Props, State> {
         <div style={{
           padding: '40px',
           textAlign: 'center',
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--bg-primary)',
+          color: 'var(--text-primary)',
+          minHeight: '100vh',
         }}>
-          <h2 style={{ color: '#f44336' }}>出错了</h2>
-          <p style={{ color: '#666' }}>{this.state.error?.message}</p>
+          <h2 style={{ color: 'var(--danger-color)' }}>出错了</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>{this.state.error?.message}</p>
           <button
             onClick={() => window.location.reload()}
             style={{
               padding: '8px 16px',
               marginTop: '16px',
-              backgroundColor: '#2196f3',
+              backgroundColor: 'var(--accent-color)',
               color: 'white',
               border: 'none',
               borderRadius: '4px',

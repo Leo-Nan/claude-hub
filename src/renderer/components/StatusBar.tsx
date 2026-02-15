@@ -38,14 +38,14 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
     <div
       style={{
         height: '24px',
-        borderTop: '1px solid #e0e0e0',
+        borderTop: '1px solid var(--border-color)',
         padding: '0 12px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         fontSize: '12px',
-        color: '#666',
-        backgroundColor: '#f5f5f5',
+        color: 'var(--text-secondary)',
+        backgroundColor: 'var(--bg-secondary)',
       }}
     >
       <div style={{ display: 'flex', gap: '16px' }}>
@@ -70,10 +70,10 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
           onClick={toggleTheme}
           style={{
             padding: '4px 8px',
-            border: '1px solid #ccc',
+            border: '1px solid var(--border-color)',
             borderRadius: '4px',
-            backgroundColor: '#fff',
-            color: '#333',
+            backgroundColor: 'var(--bg-primary)',
+            color: 'var(--text-primary)',
             cursor: 'pointer',
             fontSize: '12px',
           }}

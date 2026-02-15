@@ -55,16 +55,17 @@ const Sidebar: React.FC<SidebarProps> = ({
         style={{
           width: 200,
           height: '100%',
-          borderRight: '1px solid #e0e0e0',
+          borderRight: '1px solid var(--border-color)',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#f5f5f5',
+          backgroundColor: 'var(--bg-secondary)',
+          color: 'var(--text-primary)',
         }}
       >
         <div
           style={{
             padding: '12px',
-            borderBottom: '1px solid #e0e0e0',
+            borderBottom: '1px solid var(--border-color)',
             fontWeight: 'bold',
           }}
         >
@@ -72,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div style={{ flex: 1, overflow: 'auto' }}>
           {projects.length === 0 ? (
-            <div style={{ padding: '20px 12px', color: '#888', fontSize: '13px', textAlign: 'center' }}>
+            <div style={{ padding: '20px 12px', color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
               暂无项目<br />点击下方添加项目
             </div>
           ) : (
@@ -85,9 +86,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                   padding: '10px 12px',
                   cursor: 'pointer',
                   backgroundColor:
-                    project.id === currentProjectId ? '#e3f2fd' : 'transparent',
+                    project.id === currentProjectId ? 'var(--hover-bg)' : 'transparent',
                   borderLeft:
-                    project.id === currentProjectId ? '3px solid #2196f3' : '3px solid transparent',
+                    project.id === currentProjectId ? '3px solid var(--accent-color)' : '3px solid transparent',
                 }}
               >
                 {project.name}
@@ -99,9 +100,9 @@ const Sidebar: React.FC<SidebarProps> = ({
         onClick={onAddProject}
         style={{
           padding: '12px',
-          borderTop: '1px solid #e0e0e0',
+          borderTop: '1px solid var(--border-color)',
           cursor: 'pointer',
-          color: '#2196f3',
+          color: 'var(--accent-color)',
           fontWeight: 500,
         }}
       >

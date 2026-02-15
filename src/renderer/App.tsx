@@ -78,6 +78,8 @@ function App() {
           display: 'flex',
           height: '100vh',
           flexDirection: 'row',
+          backgroundColor: 'var(--bg-primary)',
+          color: 'var(--text-primary)',
         }}
         data-theme={theme}
       >
@@ -88,7 +90,7 @@ function App() {
               top: 0,
               left: 0,
               right: 0,
-              backgroundColor: '#f44336',
+              backgroundColor: 'var(--danger-color)',
               color: 'white',
               padding: '8px 16px',
               fontSize: '14px',

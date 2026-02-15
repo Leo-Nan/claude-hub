@@ -7,8 +7,8 @@ interface AgentTreeProps {
 }
 
 const STATUS_COLORS = {
-  active: '#4caf50',
-  idle: '#9e9e9e',
+  active: 'var(--success-color)',
+  idle: 'var(--text-secondary)',
   thinking: '#ffc107',
 };
 
@@ -30,8 +30,9 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
     <div
       style={{
         padding: '16px',
-        borderTop: '1px solid #e0e0e0',
-        backgroundColor: '#fafafa',
+        borderTop: '1px solid var(--border-color)',
+        backgroundColor: 'var(--bg-secondary)',
+        color: 'var(--text-primary)',
       }}
     >
       <div style={{ marginBottom: '12px', fontWeight: 500 }}>Agent 树状图</div>
@@ -40,9 +41,9 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
         <div
           style={{
             padding: '12px 16px',
-            backgroundColor: '#fff',
+            backgroundColor: 'var(--bg-primary)',
             borderRadius: '8px',
-            border: '1px solid #e0e0e0',
+            border: '1px solid var(--border-color)',
             boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
           }}
         >
@@ -52,7 +53,7 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
                 width: '10px',
                 height: '10px',
                 borderRadius: '50%',
-                backgroundColor: '#2196f3',
+                backgroundColor: 'var(--accent-color)',
               }}
             />
             <span style={{ fontWeight: 500 }}>私人秘书</span>
@@ -65,9 +66,9 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
             key={agent.id}
             style={{
               padding: '12px 16px',
-              backgroundColor: '#fff',
+              backgroundColor: 'var(--bg-primary)',
               borderRadius: '8px',
-              border: '1px solid #e0e0e0',
+              border: '1px solid var(--border-color)',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
               marginLeft: '24px',
               position: 'relative',
@@ -81,7 +82,7 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
                 top: '50%',
                 width: '24px',
                 height: '1px',
-                backgroundColor: '#e0e0e0',
+                backgroundColor: 'var(--border-color)',
               }}
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -102,7 +103,7 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
               style={{
                 marginTop: '8px',
                 fontSize: '12px',
-                color: '#666',
+                color: 'var(--text-secondary)',
               }}
             >
               能力: {agent.skills.join(', ')}
