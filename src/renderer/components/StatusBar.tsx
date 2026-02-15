@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Project } from '@shared/types';
+import { useAppStore } from '../stores/appStore';
 
 interface StatusBarProps {
   currentProject: Project | null;
@@ -8,6 +9,7 @@ interface StatusBarProps {
 const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
   const [sessionTime, setSessionTime] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const { theme, toggleTheme } = useAppStore();
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -63,7 +65,23 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
           </span>
         )}
       </div>
-      <div>Claude Hub v1.0.0</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={toggleTheme}
+          style={{
+            padding: '4px 8px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            backgroundColor: '#fff',
+            color: '#333',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
+        <span>Claude Hub v1.0.0</span>
+      </div>
     </div>
   );
 };
