@@ -22,19 +22,28 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [modalOpen, setModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const [searchQuery, setSearchQuery] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Sync selected index with current project
+  // Filter projects by search query
+  const filteredProjects = searchQuery
+    ? projects.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.path.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : projects;
+
+  // Sync selected index with current project (using filtered list)
   useEffect(() => {
-    if (currentProjectId && projects.length > 0) {
-      const index = projects.findIndex(p => p.id === currentProjectId);
+    if (currentProjectId && filteredProjects.length > 0) {
+      const index = filteredProjects.findIndex(p => p.id === currentProjectId);
       if (index !== -1) {
         setSelectedIndex(index);
       }
     }
-  }, [currentProjectId, projects]);
+  }, [currentProjectId, filteredProjects]);
 
-  // Handle keyboard navigation
+  // Handle keyboard navigation (using filtered projects)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (modalOpen) return;
@@ -42,20 +51,20 @@ const Sidebar: React.FC<SidebarProps> = ({
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex(prev => {
-          const newIndex = prev < projects.length - 1 ? prev + 1 : 0;
+          const newIndex = prev < filteredProjects.length - 1 ? prev + 1 : 0;
           return newIndex;
         });
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex(prev => {
-          const newIndex = prev > 0 ? prev - 1 : projects.length - 1;
+          const newIndex = prev > 0 ? prev - 1 : filteredProjects.length - 1;
           return newIndex;
         });
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < projects.length) {
-          onSelectProject(projects[selectedIndex].id);
-        } else if (projects.length === 0) {
+        if (selectedIndex >= 0 && selectedIndex < filteredProjects.length) {
+          onSelectProject(filteredProjects[selectedIndex].id);
+        } else if (filteredProjects.length === 0) {
           onAddProject();
         }
       }
@@ -126,8 +135,28 @@ const Sidebar: React.FC<SidebarProps> = ({
         >
           项目列表
         </div>
+        {/* Search input */}
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-color)' }}>
+          <input
+            type="text"
+            placeholder="搜索项目..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              fontSize: '12px',
+              border: '1px solid var(--border-color)',
+              borderRadius: '4px',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
         <div ref={listRef} style={{ flex: 1, overflow: 'auto' }}>
-          {projects.length === 0 ? (
+          {filteredProjects.length === 0 ? (
             <div style={{
               padding: '20px 12px',
               color: 'var(--text-secondary)',
@@ -138,14 +167,18 @@ const Sidebar: React.FC<SidebarProps> = ({
               gap: '8px',
               alignItems: 'center',
             }}>
-              <span style={{ fontSize: '24px', lineHeight: 1 }}>📁</span>
-              <span>暂无项目</span>
-              <span style={{ fontSize: '12px', opacity: 0.8 }}>
-                点击下方「新建项目」添加
+              <span style={{ fontSize: '24px', lineHeight: 1 }}>
+                {searchQuery ? '🔍' : '📁'}
               </span>
+              <span>{searchQuery ? '无匹配项目' : '暂无项目'}</span>
+              {!searchQuery && (
+                <span style={{ fontSize: '12px', opacity: 0.8 }}>
+                  点击下方「新建项目」添加
+                </span>
+              )}
             </div>
           ) : (
-            projects.map((project, index) => (
+            filteredProjects.map((project, index) => (
               <div
                 key={project.id}
                 data-project-item
