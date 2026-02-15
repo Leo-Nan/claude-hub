@@ -45,9 +45,13 @@ function App() {
   };
 
   const handleAddProject = async () => {
-    const project = await window.electronAPI.addProject();
-    if (project) {
-      addProject(project);
+    const result = await window.electronAPI.addProject();
+    if (result) {
+      if ('error' in result) {
+        setError(result.error);
+        return;
+      }
+      addProject(result);
     }
   };
 
