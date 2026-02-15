@@ -1,5 +1,6 @@
 import { ipcMain, dialog } from 'electron';
 import * as store from './store';
+import { setupClaudeIPC } from './claude';
 
 export function setupIPC() {
   // Get all projects
@@ -42,4 +43,7 @@ export function setupIPC() {
     store.updateAgentStatus(projectId, agentId, status as any);
     return store.getCurrentProject();
   });
+
+  // Setup Claude process IPC
+  setupClaudeIPC();
 }
