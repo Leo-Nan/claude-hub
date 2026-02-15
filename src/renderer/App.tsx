@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import Terminal from './components/Terminal';
 import AgentTree from './components/AgentTree';
 import StatusBar from './components/StatusBar';
+import ErrorBoundary from './components/ErrorBoundary';
 import { useAppStore } from './stores/appStore';
 import { Agent } from '@shared/types';
 
@@ -71,64 +72,66 @@ function App() {
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        height: '100vh',
-        flexDirection: 'row',
-      }}
-      data-theme={theme}
-    >
-      {error && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: '#f44336',
-            color: 'white',
-            padding: '8px 16px',
-            fontSize: '14px',
-            zIndex: 1000,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <span>错误: {error}</span>
-          <button
-            onClick={() => setError(null)}
+    <ErrorBoundary>
+      <div
+        style={{
+          display: 'flex',
+          height: '100vh',
+          flexDirection: 'row',
+        }}
+        data-theme={theme}
+      >
+        {error && (
+          <div
             style={{
-              background: 'none',
-              border: 'none',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: '#f44336',
               color: 'white',
-              cursor: 'pointer',
-              fontSize: '16px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              zIndex: 1000,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
             }}
           >
-            ×
-          </button>
-        </div>
-      )}
-      <Sidebar
-        projects={projects}
-        currentProjectId={currentProject?.id || null}
-        onSelectProject={handleSelectProject}
-        onAddProject={handleAddProject}
-        onRemoveProject={handleRemoveProject}
-      />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Terminal projectPath={currentProject?.path || null} />
-        {currentProject && (
-          <AgentTree
-            agents={currentProject.agents}
-            onStatusChange={handleAgentStatusChange}
-          />
+            <span>错误: {error}</span>
+            <button
+              onClick={() => setError(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '16px',
+              }}
+            >
+              ×
+            </button>
+          </div>
         )}
-        <StatusBar currentProject={currentProject} />
+        <Sidebar
+          projects={projects}
+          currentProjectId={currentProject?.id || null}
+          onSelectProject={handleSelectProject}
+          onAddProject={handleAddProject}
+          onRemoveProject={handleRemoveProject}
+        />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Terminal projectPath={currentProject?.path || null} />
+          {currentProject && (
+            <AgentTree
+              agents={currentProject.agents}
+              onStatusChange={handleAgentStatusChange}
+            />
+          )}
+          <StatusBar currentProject={currentProject} />
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }
 
