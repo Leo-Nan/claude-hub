@@ -23,7 +23,23 @@ export function setupClaudeIPC() {
 
       // Start PTY with claude command
       // Use --dangerously-skip-permissions for nested sessions
-      currentPty = pty.spawn('claude', ['--dangerously-skip-permissions'], {
+      // Try common installation paths
+      const claudePaths = [
+        'claude',
+        'C:\\Users\\Windows11\\.local\\bin\\claude.exe',
+        process.env.LOCALAPPDATA + '\\npm\\claude.exe',
+        process.env.APPDATA + '\\npm\\claude.exe',
+      ];
+
+      let claudeCmd = 'claude';
+      for (const p of claudePaths) {
+        if (p && require('fs').existsSync(p)) {
+          claudeCmd = p;
+          break;
+        }
+      }
+
+      currentPty = pty.spawn(claudeCmd, ['--dangerously-skip-permissions'], {
         cwd: projectPath,
         env: env,
         name: 'xterm-color',
