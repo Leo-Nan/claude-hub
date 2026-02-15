@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Terminal from './components/Terminal';
 import AgentTree from './components/AgentTree';
@@ -14,18 +14,28 @@ function App() {
     setCurrentProject,
     addProject,
     removeProject,
+    theme,
   } = useAppStore();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load initial data
-    window.electronAPI.getProjects().then((data) => {
-      setProjects(data);
-      window.electronAPI.getCurrentProject().then((current) => {
+    const loadInitialData = async () => {
+      try {
+        setError(null);
+        const data = await window.electronAPI.getProjects();
+        setProjects(data);
+
+        const current = await window.electronAPI.getCurrentProject();
         if (current) {
           setCurrentProject(current);
         }
-      });
-    });
+      } catch (err) {
+        console.error('加载数据失败:', err);
+        setError(err instanceof Error ? err.message : '加载数据失败');
+      }
+    };
+
+    loadInitialData();
   }, []);
 
   const handleSelectProject = async (id: string) => {
@@ -47,12 +57,17 @@ function App() {
 
   const handleAgentStatusChange = async (agentId: string, status: Agent['status']) => {
     if (!currentProject) return;
-    const updated = await window.electronAPI.updateAgentStatus(
-      currentProject.id,
-      agentId,
-      status
-    );
-    setCurrentProject(updated);
+    try {
+      const updated = await window.electronAPI.updateAgentStatus(
+        currentProject.id,
+        agentId,
+        status
+      );
+      setCurrentProject(updated);
+    } catch (err) {
+      console.error('更新 Agent 状态失败:', err);
+      setError(err instanceof Error ? err.message : '更新失败');
+    }
   };
 
   return (
@@ -62,7 +77,40 @@ function App() {
         height: '100vh',
         flexDirection: 'row',
       }}
+      data-theme={theme}
     >
+      {error && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: '#f44336',
+            color: 'white',
+            padding: '8px 16px',
+            fontSize: '14px',
+            zIndex: 1000,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>错误: {error}</span>
+          <button
+            onClick={() => setError(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '16px',
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
       <Sidebar
         projects={projects}
         currentProjectId={currentProject?.id || null}
