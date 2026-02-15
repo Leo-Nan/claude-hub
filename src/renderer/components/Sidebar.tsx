@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Project } from '@shared/types';
+import Modal from './Modal';
 
 interface SidebarProps {
   projects: Project[];
@@ -16,52 +17,84 @@ const Sidebar: React.FC<SidebarProps> = ({
   onAddProject,
   onRemoveProject,
 }) => {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+
   const handleContextMenu = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
-    if (confirm('确定删除此项目吗？')) {
-      onRemoveProject(id);
+    setProjectToDelete(id);
+    setModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (projectToDelete) {
+      onRemoveProject(projectToDelete);
     }
+    setModalOpen(false);
+    setProjectToDelete(null);
+  };
+
+  const handleCancelDelete = () => {
+    setModalOpen(false);
+    setProjectToDelete(null);
   };
 
   return (
-    <div
-      style={{
-        width: 200,
-        height: '100%',
-        borderRight: '1px solid #e0e0e0',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#f5f5f5',
-      }}
-    >
+    <>
+      <Modal
+        isOpen={modalOpen}
+        title="删除项目"
+        message="确定要删除此项目吗？此操作无法撤销。"
+        confirmText="删除"
+        cancelText="取消"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        danger
+      />
       <div
         style={{
-          padding: '12px',
-          borderBottom: '1px solid #e0e0e0',
-          fontWeight: 'bold',
+          width: 200,
+          height: '100%',
+          borderRight: '1px solid #e0e0e0',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#f5f5f5',
         }}
       >
-        项目列表
-      </div>
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        {projects.map((project) => (
-          <div
-            key={project.id}
-            onClick={() => onSelectProject(project.id)}
-            onContextMenu={(e) => handleContextMenu(e, project.id)}
-            style={{
-              padding: '10px 12px',
-              cursor: 'pointer',
-              backgroundColor:
-                project.id === currentProjectId ? '#e3f2fd' : 'transparent',
-              borderLeft:
-                project.id === currentProjectId ? '3px solid #2196f3' : '3px solid transparent',
-            }}
-          >
-            {project.name}
-          </div>
-        ))}
-      </div>
+        <div
+          style={{
+            padding: '12px',
+            borderBottom: '1px solid #e0e0e0',
+            fontWeight: 'bold',
+          }}
+        >
+          项目列表
+        </div>
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {projects.length === 0 ? (
+            <div style={{ padding: '20px 12px', color: '#888', fontSize: '13px', textAlign: 'center' }}>
+              暂无项目<br />点击下方添加项目
+            </div>
+          ) : (
+            projects.map((project) => (
+              <div
+                key={project.id}
+                onClick={() => onSelectProject(project.id)}
+                onContextMenu={(e) => handleContextMenu(e, project.id)}
+                style={{
+                  padding: '10px 12px',
+                  cursor: 'pointer',
+                  backgroundColor:
+                    project.id === currentProjectId ? '#e3f2fd' : 'transparent',
+                  borderLeft:
+                    project.id === currentProjectId ? '3px solid #2196f3' : '3px solid transparent',
+                }}
+              >
+                {project.name}
+              </div>
+            ))
+          )}
+        </div>
       <div
         onClick={onAddProject}
         style={{
@@ -74,7 +107,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       >
         + 新建项目
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
