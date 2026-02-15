@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 import { setupIPC } from './ipc';
+import { setupClaudeCleanup } from './claude';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -17,6 +18,9 @@ function createWindow() {
     },
     show: false,
   });
+
+  // Setup cleanup when window closes
+  setupClaudeCleanup(mainWindow);
 
   // Load the app
   if (process.env.NODE_ENV === 'development' || !app.isPackaged) {

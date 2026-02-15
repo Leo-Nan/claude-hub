@@ -41,8 +41,17 @@ function App() {
   }, []);
 
   const handleSelectProject = async (id: string) => {
-    const project = await window.electronAPI.setCurrentProject(id);
-    setCurrentProject(project);
+    try {
+      const project = await window.electronAPI.setCurrentProject(id);
+      if (project && 'error' in project) {
+        setError(project.error);
+        return;
+      }
+      setCurrentProject(project);
+    } catch (err) {
+      console.error('选择项目失败:', err);
+      setError(err instanceof Error ? err.message : '选择项目失败');
+    }
   };
 
   const handleAddProject = async () => {
@@ -56,25 +65,41 @@ function App() {
         }
         addProject(result);
       }
+    } catch (err) {
+      console.error('添加项目失败:', err);
+      setError(err instanceof Error ? err.message : '添加项目失败');
     } finally {
       setIsAddingProject(false);
     }
   };
 
   const handleRemoveProject = async (id: string) => {
-    const updatedProjects = await window.electronAPI.removeProject(id);
-    setProjects(updatedProjects);
+    try {
+      const updatedProjects = await window.electronAPI.removeProject(id);
+      if (updatedProjects && 'error' in updatedProjects) {
+        setError(updatedProjects.error);
+        return;
+      }
+      setProjects(updatedProjects);
+    } catch (err) {
+      console.error('删除项目失败:', err);
+      setError(err instanceof Error ? err.message : '删除项目失败');
+    }
   };
 
   const handleAgentStatusChange = async (agentId: string, status: Agent['status']) => {
     if (!currentProject) return;
     try {
-      const updated = await window.electronAPI.updateAgentStatus(
+      const result = await window.electronAPI.updateAgentStatus(
         currentProject.id,
         agentId,
         status
       );
-      setCurrentProject(updated);
+      if (result && 'error' in result) {
+        setError(result.error);
+        return;
+      }
+      setCurrentProject(result);
     } catch (err) {
       console.error('更新 Agent 状态失败:', err);
       setError(err instanceof Error ? err.message : '更新失败');
