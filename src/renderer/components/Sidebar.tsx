@@ -208,9 +208,29 @@ const Sidebar: React.FC<SidebarProps> = ({
                       : selectedIndex === index
                         ? '3px solid var(--success-color)'
                         : '3px solid transparent',
+                  transition: 'background-color 0.1s',
                 }}
               >
-                {project.name}
+                <div style={{
+                  fontSize: '13px',
+                  fontWeight: project.id === currentProjectId ? 500 : 400,
+                  color: 'var(--text-primary)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {project.name}
+                </div>
+                <div style={{
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                  marginTop: '2px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {project.agents?.length || 0} 个 Agent
+                </div>
               </div>
             ))
           )}
