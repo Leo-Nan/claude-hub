@@ -10,6 +10,16 @@ function isValidStatus(status: string): status is Agent['status'] {
   return VALID_STATUSES.includes(status as Agent['status']);
 }
 
+// Validate string is not empty
+function isValidId(id: unknown): id is string {
+  return typeof id === 'string' && id.length > 0;
+}
+
+// Validate theme
+function isValidTheme(theme: unknown): theme is 'light' | 'dark' {
+  return theme === 'light' || theme === 'dark';
+}
+
 export function setupIPC() {
   // Get all projects
   ipcMain.handle('get-projects', () => {
@@ -44,12 +54,18 @@ export function setupIPC() {
 
   // Remove project
   ipcMain.handle('remove-project', (_event, id: string) => {
+    if (!isValidId(id)) {
+      return { error: '无效的项目ID' };
+    }
     store.removeProject(id);
     return store.getProjects();
   });
 
   // Set current project
   ipcMain.handle('set-current-project', (_event, id: string) => {
+    if (!isValidId(id)) {
+      return { error: '无效的项目ID' };
+    }
     store.setCurrentProject(id);
     return store.getCurrentProject();
   });
@@ -73,7 +89,10 @@ export function setupIPC() {
     return store.getTheme();
   });
 
-  ipcMain.handle('set-theme', (_event, theme: 'light' | 'dark') => {
+  ipcMain.handle('set-theme', (_event, theme: unknown) => {
+    if (!isValidTheme(theme)) {
+      return { error: '无效的主题' };
+    }
     store.setTheme(theme);
     return theme;
   });

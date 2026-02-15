@@ -21,3 +21,15 @@ export interface AppConfig {
   projects: Project[];
   currentProjectId: string | null;
 }
+
+// IPC response types
+export interface IPCError {
+  error: string;
+}
+
+export interface IPCSuccess<T> {
+  success: true;
+  data?: T;
+}
+
+export type IPCResponse<T> = T | IPCError;
