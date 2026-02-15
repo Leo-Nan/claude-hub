@@ -13,6 +13,7 @@
 - electron-store (数据持久化)
 - xterm.js (终端组件)
 - Zustand (状态管理)
+- Playwright (自动化测试)
 
 ### 项目结构
 
@@ -31,8 +32,10 @@ src/
 │   │   ├── Terminal.tsx    # 终端
 │   │   ├── AgentTree.tsx   # Agent 树
 │   │   └── StatusBar.tsx   # 状态栏
-│   └── stores/             # Zustand 状态
-│       └── appStore.ts
+│   ├── stores/             # Zustand 状态
+│   │   └── appStore.ts
+│   └── styles/
+│       └── theme.css       # 主题样式
 └── shared/                 # 共享类型
     └── types.ts
 ```
@@ -48,6 +51,41 @@ npm run build
 
 # 打包为 exe
 npx electron-packager . "Claude Hub" --platform=win32 --arch=x64 --out=release --overwrite --asar
+
+# 运行测试
+npm test
+```
+
+## 持续改进工作流
+
+### 自动迭代流程
+
+```
+问题发现 → 代码分析 → 修复实现 → 构建测试 → 打包验证 → 提交推送
+```
+
+### 常用开发任务
+
+| 任务 | 命令/Skill |
+|------|-----------|
+| 需求分析 | @superpowers:brainstorming |
+| 制定计划 | @superpowers:writing-plans |
+| 功能开发 | @feature-dev |
+| 调试问题 | @superpowers:systematic-debugging |
+| TDD 开发 | @superpowers:test-driven-development |
+| 代码审查 | @pr-review-toolkit:review-pr |
+
+### 快速修复模式
+
+对于已明确的问题，直接修复：
+
+```bash
+# 1. 分析问题
+# 2. 修复代码
+npm run build && npx electron-packager . "Claude Hub" --platform=win32 --arch=x64 --out=release --overwrite --asar
+
+# 3. 提交
+git add -A && git commit -m "fix: 描述" && git push
 ```
 
 ## Agent Team 使用指南
@@ -71,14 +109,15 @@ Create an agent team with 3 teammates for Claude Hub development:
 | Backend | Electron 主进程、IPC 通信、数据持久化 |
 | QA | 测试验证、Bug 修复、代码审查 |
 
-### 快捷键
+### 四人小队模式（持续改进）
 
-| 操作 | 快捷键 |
-|------|--------|
-| 选择队友 | Shift+↑/↓ |
-| 发送消息 | Enter |
-| 任务列表 | Ctrl+T |
-| 委派模式 | Shift+Tab |
+```
+创建持续改进小队：
+- analyzer: 分析代码找问题
+- ui-checker: 检查 UI/UX 问题
+- fixer: 修复发现的问题
+- qa-devops: 构建打包验证
+```
 
 ### 任务分配示例
 
@@ -94,26 +133,29 @@ Create an agent team with 3 teammates for Claude Hub development:
 
 - 使用 TypeScript，严格类型检查
 - 组件使用函数式组件 + Hooks
-- 样式使用内联样式（简单项目）或 CSS Modules
+- 样式使用 CSS 变量 + 内联样式
 - IPC 通信使用 contextBridge 暴露 API
+- 错误处理使用 try-catch + 友好错误提示
+- 全局异常处理在 main/index.ts
 
 ## 可用 Skills
 
-| Skill | 用途 |
-|-------|------|
-| @superpowers:brainstorming | 需求分析和设计 |
-| @superpowers:writing-plans | 制定实施计划 |
-| @superpowers:systematic-debugging | 调试问题 |
-| @superpowers:test-driven-development | TDD 开发 |
-| @feature-dev | 功能开发工作流 |
-| @pr-review-toolkit:review-pr | PR 审查 |
+| Skill | 用途 | 触发方式 |
+|-------|------|---------|
+| @superpowers:brainstorming | 需求分析和设计 | @skill |
+| @superpowers:writing-plans | 制定实施计划 | @skill |
+| @superpowers:systematic-debugging | 调试问题 | @skill |
+| @superpowers:test-driven-development | TDD 开发 | @skill |
+| @feature-dev | 功能开发工作流 | @skill |
+| @pr-review-toolkit:review-pr | PR 审查 | @skill |
 
 ## 核心原则
 
 1. **先了解需求** - 不确定时先问清楚
 2. **提供选项** - 决策类问题列出利弊
 3. **使用 Skills** - 复杂任务先调用相关 skill
-4. **并行开发** - 使用 Agent Team 进行高效协作
+4. **持续改进** - 不要停，不断迭代优化
+5. **自动化测试** - 每次修改后打包验证
 
 ## 沟通风格
 
