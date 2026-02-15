@@ -156,29 +156,47 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
       <div
         style={{
-          padding: '8px 12px',
-          borderBottom: '1px solid var(--border-color)',
+          padding: '10px 16px',
+          borderBottom: '1px solid var(--border-light)',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          justifyContent: 'space-between',
           backgroundColor: 'var(--bg-secondary)',
           color: 'var(--text-primary)',
         }}
       >
-        <span style={{ fontWeight: 500 }}>终端</span>
-        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Ctrl+C 复制 | Ctrl+V 粘贴 | Ctrl+L 清屏</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{
+            fontSize: '13px',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: isSessionActive ? 'var(--success-color)' : 'var(--text-muted)',
+            }} />
+            终端
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Ctrl+C 复制 | Ctrl+V 粘贴 | Ctrl+L 清屏</span>
+        </div>
         {!isSessionActive ? (
           <button
             onClick={handleStartSession}
             disabled={!projectPath}
             style={{
-              padding: '4px 12px',
-              backgroundColor: projectPath ? 'var(--success-color)' : 'var(--text-secondary)',
-              color: 'white',
+              padding: '5px 14px',
+              backgroundColor: projectPath ? 'var(--accent-color)' : 'var(--bg-tertiary)',
+              color: projectPath ? 'white' : 'var(--text-muted)',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-md)',
               cursor: projectPath ? 'pointer' : 'not-allowed',
               fontSize: '12px',
+              fontWeight: 500,
             }}
           >
             启动 Claude
@@ -187,11 +205,11 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
           <button
             onClick={handleKillSession}
             style={{
-              padding: '4px 12px',
+              padding: '5px 14px',
               backgroundColor: 'var(--danger-color)',
               color: 'white',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-md)',
               cursor: 'pointer',
               fontSize: '12px',
             }}

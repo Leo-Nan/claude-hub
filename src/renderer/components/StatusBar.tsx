@@ -49,59 +49,117 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
   return (
     <div
       style={{
-        height: '24px',
+        height: '28px',
         borderTop: '1px solid var(--border-color)',
         padding: '0 12px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         fontSize: '12px',
-        color: 'var(--text-secondary)',
         backgroundColor: 'var(--bg-secondary)',
+        color: 'var(--text-secondary)',
+        fontFamily: 'var(--font-sans)',
       }}
     >
-      <div style={{ display: 'flex', gap: '16px' }}>
-        <span
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* 项目信息 */}
+        <div
           onClick={handleCopyPath}
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
             cursor: currentProject?.path ? 'pointer' : 'default',
+            padding: '2px 6px',
+            borderRadius: 'var(--radius-sm)',
+            transition: 'background-color 0.15s',
           }}
           title={currentProject?.path ? '点击复制路径' : undefined}
+          onMouseEnter={(e) => {
+            if (currentProject?.path) e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
         >
-          项目: {currentProject?.name || '未选择'}
-          {copied && <span style={{ marginLeft: '4px', color: 'var(--success-color)' }}>✓</span>}
-        </span>
-        <span>
-          活跃Agent: {activeAgents}
-        </span>
-        {currentProject && (
-          <span
-            style={{
-              cursor: 'default',
-              color: isSessionActive ? 'var(--success-color)' : 'var(--text-secondary)',
-            }}
-            title={isSessionActive ? '会话进行中' : '会话未启动'}
-          >
-            会话: {formatTime(localTime)} {isSessionActive ? '●' : '○'}
+          <span style={{ color: 'var(--accent-color)', fontWeight: 500 }}>
+            {currentProject?.name || '未选择项目'}
           </span>
+          {copied && (
+            <span style={{ color: 'var(--success-color)', fontSize: '11px' }}>
+              ✓ 已复制
+            </span>
+          )}
+        </div>
+
+        {/* 分隔线 */}
+        <div style={{ width: '1px', height: '14px', backgroundColor: 'var(--border-color)' }} />
+
+        {/* 活跃 Agent */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            backgroundColor: activeAgents > 0 ? 'var(--success-color)' : 'var(--text-muted)'
+          }} />
+          <span>{activeAgents} 活跃</span>
+        </div>
+
+        {/* 分隔线 */}
+        <div style={{ width: '1px', height: '14px', backgroundColor: 'var(--border-color)' }} />
+
+        {/* 会话状态 */}
+        {currentProject && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            color: isSessionActive ? 'var(--success-color)' : 'var(--text-muted)',
+          }}>
+            <span style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: 'currentColor',
+              animation: isSessionActive ? 'pulse 2s ease-in-out infinite' : 'none',
+            }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+              {isSessionActive ? formatTime(localTime) : '会话未启动'}
+            </span>
+          </div>
         )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* 主题切换 */}
         <button
           onClick={toggleTheme}
           style={{
-            padding: '4px 8px',
+            padding: '2px 8px',
             border: '1px solid var(--border-color)',
-            borderRadius: '4px',
-            backgroundColor: 'var(--bg-primary)',
-            color: 'var(--text-primary)',
+            borderRadius: 'var(--radius-sm)',
+            backgroundColor: 'transparent',
+            color: 'var(--text-secondary)',
             cursor: 'pointer',
             fontSize: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
           }}
+          title={theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
         >
           {theme === 'light' ? '🌙' : '☀️'}
+          <span style={{ fontSize: '11px' }}>{theme === 'light' ? '深色' : '浅色'}</span>
         </button>
-        <span>Claude Hub v1.0.0</span>
+
+        {/* 分隔线 */}
+        <div style={{ width: '1px', height: '14px', backgroundColor: 'var(--border-color)' }} />
+
+        {/* 版本信息 */}
+        <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
+          Claude Hub v1.0.0
+        </span>
       </div>
     </div>
   );

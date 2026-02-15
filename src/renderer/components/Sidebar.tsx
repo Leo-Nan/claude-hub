@@ -117,7 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       />
       <div
         style={{
-          width: 200,
+          width: 220,
           height: '100%',
           borderRight: '1px solid var(--border-color)',
           display: 'flex',
@@ -126,17 +126,26 @@ const Sidebar: React.FC<SidebarProps> = ({
           color: 'var(--text-primary)',
         }}
       >
+        {/* 头部 */}
         <div
           style={{
-            padding: '12px',
-            borderBottom: '1px solid var(--border-color)',
-            fontWeight: 'bold',
+            padding: '16px 12px 12px',
+            borderBottom: '1px solid var(--border-light)',
           }}
         >
-          项目列表
+          <div style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            color: 'var(--text-muted)',
+            marginBottom: '8px',
+          }}>
+            项目
+          </div>
         </div>
         {/* Search input */}
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-color)' }}>
+        <div style={{ padding: '0 12px 12px' }}>
           <input
             type="text"
             placeholder="搜索项目..."
@@ -144,10 +153,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '6px 8px',
+              padding: '6px 10px',
               fontSize: '12px',
               border: '1px solid var(--border-color)',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-md)',
               backgroundColor: 'var(--bg-primary)',
               color: 'var(--text-primary)',
               outline: 'none',

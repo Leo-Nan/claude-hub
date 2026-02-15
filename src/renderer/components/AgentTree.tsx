@@ -145,13 +145,20 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
   return (
     <div
       style={{
-        padding: '16px',
-        borderTop: '1px solid var(--border-color)',
+        padding: '12px 16px',
+        borderTop: '1px solid var(--border-light)',
         backgroundColor: 'var(--bg-secondary)',
         color: 'var(--text-primary)',
       }}
     >
-      <div style={{ marginBottom: '12px', fontWeight: 500 }}>Agent 树状图</div>
+      <div style={{
+        marginBottom: '12px',
+        fontSize: '11px',
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+        color: 'var(--text-muted)',
+      }}>Agent 团队</div>
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
         {/* Root Agent */}
         <div
