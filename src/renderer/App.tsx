@@ -54,6 +54,7 @@ function App() {
   } = useAppStore();
   const [error, setError] = useState<string | null>(null);
   const [isAddingProject, setIsAddingProject] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // 初始化主题
   useEffect(() => {
@@ -76,6 +77,7 @@ function App() {
 
   useEffect(() => {
     const loadInitialData = async () => {
+      setIsLoading(true);
       try {
         setError(null);
         const data = await window.electronAPI.getProjects();
@@ -88,6 +90,8 @@ function App() {
       } catch (err) {
         console.error('加载数据失败:', err);
         setError(handleError(err, '加载数据失败'));
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -159,6 +163,35 @@ function App() {
       setError(handleError(err, '更新 Agent 状态失败'));
     }
   };
+
+  // Loading screen
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          backgroundColor: 'var(--bg-primary)',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '3px solid var(--border-color)',
+            borderTopColor: 'var(--accent-color)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px',
+          }} />
+          <span>加载中...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>
