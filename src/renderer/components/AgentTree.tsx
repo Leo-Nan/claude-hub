@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Agent } from '@shared/types';
 
 interface AgentTreeProps {
@@ -18,12 +18,128 @@ const STATUS_LABELS = {
   thinking: '思考中',
 };
 
+interface AgentMenuProps {
+  agent: Agent;
+  onClose: () => void;
+  onStatusChange: (agentId: string, status: Agent['status']) => void;
+}
+
+const AgentMenu: React.FC<AgentMenuProps> = ({ agent, onClose, onStatusChange }) => {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  const handleAction = (action: string) => {
+    switch (action) {
+      case 'start':
+        onStatusChange(agent.id, 'active');
+        break;
+      case 'stop':
+        onStatusChange(agent.id, 'idle');
+        break;
+      case 'think':
+        onStatusChange(agent.id, 'thinking');
+        break;
+    }
+    onClose();
+  };
+
+  return (
+    <div
+      ref={menuRef}
+      style={{
+        position: 'absolute',
+        top: '100%',
+        left: 0,
+        zIndex: 100,
+        backgroundColor: 'var(--bg-primary)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '6px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        minWidth: '140px',
+        padding: '4px 0',
+      }}
+    >
+      <div
+        style={{
+          padding: '8px 12px',
+          fontSize: '12px',
+          color: 'var(--text-secondary)',
+          borderBottom: '1px solid var(--border-color)',
+        }}
+      >
+        {agent.name}
+      </div>
+      {agent.status !== 'active' && (
+        <div
+          onClick={() => handleAction('start')}
+          style={{
+            padding: '8px 12px',
+            cursor: 'pointer',
+            fontSize: '13px',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          启动
+        </div>
+      )}
+      {agent.status === 'active' && (
+        <div
+          onClick={() => handleAction('stop')}
+          style={{
+            padding: '8px 12px',
+            cursor: 'pointer',
+            fontSize: '13px',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          停止
+        </div>
+      )}
+      <div
+        onClick={() => handleAction('think')}
+        style={{
+          padding: '8px 12px',
+          cursor: 'pointer',
+          fontSize: '13px',
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+      >
+        思考模式
+      </div>
+      <div
+        style={{
+          padding: '8px 12px',
+          cursor: 'pointer',
+          fontSize: '13px',
+          borderTop: '1px solid var(--border-color)',
+          color: 'var(--text-secondary)',
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+      >
+        配置
+      </div>
+    </div>
+  );
+};
+
 const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
-  const handleStatusClick = (agentId: string, currentStatus: Agent['status']) => {
-    const statusOrder: Agent['status'][] = ['idle', 'active', 'thinking'];
-    const currentIndex = statusOrder.indexOf(currentStatus);
-    const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
-    onStatusChange(agentId, nextStatus);
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+
+  const handleAgentClick = (agentId: string) => {
+    setSelectedAgent(selectedAgent === agentId ? null : agentId);
   };
 
   return (
@@ -87,7 +203,7 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span
-                onClick={() => handleStatusClick(agent.id, agent.status)}
+                onClick={() => handleAgentClick(agent.id)}
                 style={{
                   width: '10px',
                   height: '10px',
@@ -95,9 +211,21 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
                   backgroundColor: STATUS_COLORS[agent.status],
                   cursor: 'pointer',
                 }}
-                title="点击切换状态"
+                title="点击打开操作菜单"
               />
-              <span style={{ fontWeight: 500 }}>{agent.name}</span>
+              <span
+                onClick={() => handleAgentClick(agent.id)}
+                style={{ fontWeight: 500, cursor: 'pointer' }}
+              >
+                {agent.name}
+              </span>
+              {selectedAgent === agent.id && (
+                <AgentMenu
+                  agent={agent}
+                  onClose={() => setSelectedAgent(null)}
+                  onStatusChange={onStatusChange}
+                />
+              )}
             </div>
             <div
               style={{

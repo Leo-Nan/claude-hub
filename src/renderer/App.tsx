@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Terminal from './components/Terminal';
 import AgentTree from './components/AgentTree';
@@ -6,6 +6,40 @@ import StatusBar from './components/StatusBar';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useAppStore } from './stores/appStore';
 import { Agent } from '@shared/types';
+
+// 错误消息转换为友好提示
+const getFriendlyError = (error: string | Error): string => {
+  const message = error instanceof Error ? error.message : error;
+
+  // 常见错误映射
+  const errorMap: Record<string, string> = {
+    'ENOENT': '文件或文件夹不存在',
+    'EACCES': '没有访问权限，请检查文件夹权限',
+    'EPERM': '操作被拒绝，需要管理员权限',
+    'ENOTDIR': '路径不是有效的文件夹',
+    'ECONNREFUSED': '无法连接到服务，请稍后重试',
+    'ETIMEDOUT': '连接超时，请检查网络',
+    'NETWORK_ERROR': '网络连接失败',
+    'timeout': '操作超时，请重试',
+    'not found': '未找到相关内容',
+    'permission denied': '权限不足',
+    'access denied': '访问被拒绝',
+  };
+
+  const lowerMessage = message.toLowerCase();
+  for (const [key, friendly] of Object.entries(errorMap)) {
+    if (lowerMessage.includes(key.toLowerCase())) {
+      return friendly;
+    }
+  }
+
+  // 默认保留原始错误，但去除技术细节
+  if (message.includes('Error:')) {
+    return message.replace('Error:', '').trim();
+  }
+
+  return message;
+};
 
 function App() {
   const {
@@ -20,6 +54,20 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [isAddingProject, setIsAddingProject] = useState(false);
 
+  // 自动关闭错误提示（5秒后）
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // 统一错误处理函数
+  const handleError = useCallback((err: unknown, fallback: string) => {
+    const message = err instanceof Error ? err.message : fallback;
+    return getFriendlyError(message);
+  }, []);
+
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -33,12 +81,12 @@ function App() {
         }
       } catch (err) {
         console.error('加载数据失败:', err);
-        setError(err instanceof Error ? err.message : '加载数据失败');
+        setError(handleError(err, '加载数据失败'));
       }
     };
 
     loadInitialData();
-  }, []);
+  }, [setProjects, setCurrentProject, handleError]);
 
   const handleSelectProject = async (id: string) => {
     try {
