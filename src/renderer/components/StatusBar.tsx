@@ -8,6 +8,7 @@ interface StatusBarProps {
 
 const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
   const [localTime, setLocalTime] = useState(0);
+  const [copied, setCopied] = useState(false);
   const { theme, toggleTheme, isSessionActive, sessionStartTime } = useAppStore();
 
   // 监听会话状态变化，开始计时
@@ -37,6 +38,14 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
     (a) => a.status === 'active'
   ).length || 0;
 
+  const handleCopyPath = async () => {
+    if (currentProject?.path) {
+      await navigator.clipboard.writeText(currentProject.path);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <div
       style={{
@@ -52,8 +61,15 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
       }}
     >
       <div style={{ display: 'flex', gap: '16px' }}>
-        <span>
+        <span
+          onClick={handleCopyPath}
+          style={{
+            cursor: currentProject?.path ? 'pointer' : 'default',
+          }}
+          title={currentProject?.path ? '点击复制路径' : undefined}
+        >
           项目: {currentProject?.name || '未选择'}
+          {copied && <span style={{ marginLeft: '4px', color: 'var(--success-color)' }}>✓</span>}
         </span>
         <span>
           活跃Agent: {activeAgents}
