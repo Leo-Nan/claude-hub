@@ -5,17 +5,21 @@ interface AppState {
   projects: Project[];
   currentProject: Project | null;
   isLoading: boolean;
+  theme: 'light' | 'dark';
   setProjects: (projects: Project[]) => void;
   setCurrentProject: (project: Project | null) => void;
   addProject: (project: Project) => void;
   removeProject: (id: string) => void;
   setLoading: (loading: boolean) => void;
+  setTheme: (theme: 'light' | 'dark') => void;
+  toggleTheme: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   projects: [],
   currentProject: null,
   isLoading: false,
+  theme: 'light',
   setProjects: (projects) => set({ projects }),
   setCurrentProject: (project) => set({ currentProject: project }),
   addProject: (project) =>
@@ -30,4 +34,9 @@ export const useAppStore = create<AppState>((set) => ({
         state.currentProject?.id === id ? null : state.currentProject,
     })),
   setLoading: (isLoading) => set({ isLoading }),
+  setTheme: (theme) => set({ theme }),
+  toggleTheme: () =>
+    set((state) => ({
+      theme: state.theme === 'light' ? 'dark' : 'light',
+    })),
 }));
