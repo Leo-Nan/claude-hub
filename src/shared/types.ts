@@ -16,7 +16,7 @@ export interface Agent {
 }
 
 export interface AppConfig {
-  theme: 'light';
+  theme: 'light' | 'dark';
   sidebarWidth: number;
   projects: Project[];
   currentProjectId: string | null;
