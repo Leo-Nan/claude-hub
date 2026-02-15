@@ -6,6 +6,8 @@ interface AppState {
   currentProject: Project | null;
   isLoading: boolean;
   theme: 'light' | 'dark';
+  isSessionActive: boolean;
+  sessionStartTime: number | null;
   setProjects: (projects: Project[]) => void;
   setCurrentProject: (project: Project | null) => void;
   addProject: (project: Project) => void;
@@ -13,6 +15,7 @@ interface AppState {
   setLoading: (loading: boolean) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
+  setSessionActive: (active: boolean, startTime?: number | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -20,6 +23,8 @@ export const useAppStore = create<AppState>((set) => ({
   currentProject: null,
   isLoading: false,
   theme: 'light',
+  isSessionActive: false,
+  sessionStartTime: null,
   setProjects: (projects) => set({ projects }),
   setCurrentProject: (project) => set({ currentProject: project }),
   addProject: (project) =>
@@ -39,4 +44,9 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({
       theme: state.theme === 'light' ? 'dark' : 'light',
     })),
+  setSessionActive: (active, startTime = null) =>
+    set({
+      isSessionActive: active,
+      sessionStartTime: active ? (startTime ?? Date.now()) : null,
+    }),
 }));

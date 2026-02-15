@@ -7,19 +7,22 @@ interface StatusBarProps {
 }
 
 const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
-  const [sessionTime, setSessionTime] = useState(0);
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  const { theme, toggleTheme } = useAppStore();
+  const [localTime, setLocalTime] = useState(0);
+  const { theme, toggleTheme, isSessionActive, sessionStartTime } = useAppStore();
 
+  // 监听会话状态变化，开始计时
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isSessionActive) {
+    if (isSessionActive && sessionStartTime) {
       interval = setInterval(() => {
-        setSessionTime((prev) => prev + 1);
+        const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+        setLocalTime(elapsed);
       }, 1000);
+    } else {
+      setLocalTime(0);
     }
     return () => clearInterval(interval);
-  }, [isSessionActive]);
+  }, [isSessionActive, sessionStartTime]);
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -57,11 +60,13 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
         </span>
         {currentProject && (
           <span
-            style={{ cursor: 'pointer' }}
-            onClick={() => setIsSessionActive(!isSessionActive)}
-            title="点击开始/暂停计时"
+            style={{
+              cursor: 'default',
+              color: isSessionActive ? 'var(--success-color)' : 'var(--text-secondary)',
+            }}
+            title={isSessionActive ? '会话进行中' : '会话未启动'}
           >
-            会话: {formatTime(sessionTime)}
+            会话: {formatTime(localTime)} {isSessionActive ? '●' : '○'}
           </span>
         )}
       </div>

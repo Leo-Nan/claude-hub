@@ -4,6 +4,22 @@ import { BrowserWindow, ipcMain } from 'electron';
 let currentPty: pty.IPty | null = null;
 let mainWindow: BrowserWindow | null = null;
 
+// Cleanup function to clear references
+export function cleanupClaudeSession() {
+  if (currentPty) {
+    currentPty.kill();
+    currentPty = null;
+  }
+  mainWindow = null;
+}
+
+// Register cleanup when window closes
+export function setupClaudeCleanup(window: BrowserWindow) {
+  window.on('closed', () => {
+    cleanupClaudeSession();
+  });
+}
+
 export function setupClaudeIPC() {
   // Start Claude session with PTY
   ipcMain.handle('start-claude-session', async (event, projectPath: string) => {

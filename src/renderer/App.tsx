@@ -18,6 +18,7 @@ function App() {
     theme,
   } = useAppStore();
   const [error, setError] = useState<string | null>(null);
+  const [isAddingProject, setIsAddingProject] = useState(false);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -45,13 +46,18 @@ function App() {
   };
 
   const handleAddProject = async () => {
-    const result = await window.electronAPI.addProject();
-    if (result) {
-      if ('error' in result) {
-        setError(result.error);
-        return;
+    setIsAddingProject(true);
+    try {
+      const result = await window.electronAPI.addProject();
+      if (result) {
+        if ('error' in result) {
+          setError(result.error);
+          return;
+        }
+        addProject(result);
       }
-      addProject(result);
+    } finally {
+      setIsAddingProject(false);
     }
   };
 
@@ -125,6 +131,7 @@ function App() {
           onSelectProject={handleSelectProject}
           onAddProject={handleAddProject}
           onRemoveProject={handleRemoveProject}
+          isAddingProject={isAddingProject}
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Terminal projectPath={currentProject?.path || null} />

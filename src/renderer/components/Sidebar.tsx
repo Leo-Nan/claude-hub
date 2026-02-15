@@ -8,6 +8,7 @@ interface SidebarProps {
   onSelectProject: (id: string) => void;
   onAddProject: () => void;
   onRemoveProject: (id: string) => void;
+  isAddingProject?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -16,6 +17,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onSelectProject,
   onAddProject,
   onRemoveProject,
+  isAddingProject = false,
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
@@ -73,8 +75,21 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div style={{ flex: 1, overflow: 'auto' }}>
           {projects.length === 0 ? (
-            <div style={{ padding: '20px 12px', color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center' }}>
-              暂无项目<br />点击下方添加项目
+            <div style={{
+              padding: '20px 12px',
+              color: 'var(--text-secondary)',
+              fontSize: '13px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              alignItems: 'center',
+            }}>
+              <span style={{ fontSize: '24px', lineHeight: 1 }}>📁</span>
+              <span>暂无项目</span>
+              <span style={{ fontSize: '12px', opacity: 0.8 }}>
+                点击下方「新建项目」添加
+              </span>
             </div>
           ) : (
             projects.map((project) => (
@@ -97,16 +112,28 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
       <div
-        onClick={onAddProject}
+        onClick={isAddingProject ? undefined : onAddProject}
         style={{
           padding: '12px',
           borderTop: '1px solid var(--border-color)',
-          cursor: 'pointer',
-          color: 'var(--accent-color)',
+          cursor: isAddingProject ? 'wait' : 'pointer',
+          color: isAddingProject ? 'var(--text-secondary)' : 'var(--accent-color)',
           fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          opacity: isAddingProject ? 0.7 : 1,
         }}
       >
-        + 新建项目
+        {isAddingProject ? (
+          <>
+            <span style={{ animation: 'spin 1s linear infinite' }}>⟳</span>
+            正在添加...
+          </>
+        ) : (
+          '+ 新建项目'
+        )}
       </div>
       </div>
     </>

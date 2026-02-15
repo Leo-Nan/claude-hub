@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
+import { useAppStore } from '../stores/appStore';
 
 interface TerminalProps {
   projectPath: string | null;
@@ -13,6 +14,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
   const [isActive, setIsActive] = useState(false);
   const isActiveRef = useRef(isActive);
   const listenersSetupRef = useRef(false);
+  const { setSessionActive } = useAppStore();
 
   // 保持 ref 与 state 同步
   useEffect(() => {
@@ -67,6 +69,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
           xtermRef.current.writeln(`\x1b[31m错误: ${error}\x1b[0m`);
         }
         setIsActive(false);
+        setSessionActive(false);
       });
 
       // Listen for close
@@ -75,6 +78,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
           xtermRef.current.writeln(`\x1b[33m会话已结束 (退出码: ${code})\x1b[0m`);
         }
         setIsActive(false);
+        setSessionActive(false);
       });
     }
 
@@ -131,6 +135,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
 
     if (result.success) {
       setIsActive(true);
+      setSessionActive(true, Date.now());
       term.writeln('\x1b[32mClaude 会话已启动！\x1b[0m');
       term.writeln('');
     } else {
@@ -142,6 +147,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
   const handleKillSession = async () => {
     await window.electronAPI.killClaudeSession();
     setIsActive(false);
+    setSessionActive(false);
     if (xtermRef.current) {
       xtermRef.current.writeln('\x1b[33m会话已终止\x1b[0m');
     }
