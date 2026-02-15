@@ -236,7 +236,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             正在添加...
           </>
         ) : (
-          '+ 新建项目'
+          <>
+            <span style={{ fontSize: '14px' }}>+</span>
+            新建项目
+          </>
         )}
       </div>
       </div>
