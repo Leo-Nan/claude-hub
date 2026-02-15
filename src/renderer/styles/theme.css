@@ -1,0 +1,28 @@
+:root {
+  /* Light 主题 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e0e0e0;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --border-color: #e0e0e0;
+  --accent-color: #2196f3;
+  --success-color: #4caf50;
+  --danger-color: #f44336;
+  --hover-bg: #e3f2fd;
+  --terminal-bg: #1e1e1e;
+  --terminal-fg: #d4d4d4;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #3c3c3c;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --border-color: #3c3c3c;
+  --accent-color: #4fc3f7;
+  --success-color: #81c784;
+  --danger-color: #e57373;
+  --hover-bg: #2d2d2d;
+}
