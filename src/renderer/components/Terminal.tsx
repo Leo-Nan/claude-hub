@@ -27,8 +27,8 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       fontSize: 14,
       fontFamily: 'Consolas, Monaco, monospace',
       theme: {
-        background: '#1e1e1e',
-        foreground: '#d4d4d4',
+        background: 'var(--terminal-bg, #1e1e1e)',
+        foreground: 'var(--terminal-fg, #d4d4d4)',
         selectionBackground: 'rgba(255, 255, 255, 0.3)',
       },
     });
@@ -152,21 +152,23 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       <div
         style={{
           padding: '8px 12px',
-          borderBottom: '1px solid #e0e0e0',
+          borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
+          backgroundColor: 'var(--bg-secondary)',
+          color: 'var(--text-primary)',
         }}
       >
         <span style={{ fontWeight: 500 }}>终端</span>
-        <span style={{ fontSize: '11px', color: '#888' }}>Ctrl+C 复制 | Ctrl+V 粘贴</span>
+        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Ctrl+C 复制 | Ctrl+V 粘贴</span>
         {!isActive ? (
           <button
             onClick={handleStartSession}
             disabled={!projectPath}
             style={{
               padding: '4px 12px',
-              backgroundColor: projectPath ? '#4caf50' : '#ccc',
+              backgroundColor: projectPath ? 'var(--success-color)' : 'var(--text-secondary)',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
@@ -181,7 +183,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
             onClick={handleKillSession}
             style={{
               padding: '4px 12px',
-              backgroundColor: '#f44336',
+              backgroundColor: 'var(--danger-color)',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
@@ -197,7 +199,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
         ref={terminalRef}
         style={{
           flex: 1,
-          backgroundColor: '#1e1e1e',
+          backgroundColor: 'var(--terminal-bg, #1e1e1e)',
           padding: '8px',
         }}
       />
