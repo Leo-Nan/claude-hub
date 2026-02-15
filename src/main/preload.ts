@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startClaudeSession: (projectPath: string) => ipcRenderer.invoke('start-claude-session', projectPath),
   sendClaudeInput: (input: string) => ipcRenderer.invoke('send-claude-input', input),
   killClaudeSession: () => ipcRenderer.invoke('kill-claude-session'),
+  resizePty: (cols: number, rows: number) => ipcRenderer.invoke('resize-pty', cols, rows),
   onClaudeOutput: (callback: (data: string) => void) => {
     ipcRenderer.on('claude-output', (_event, data) => callback(data));
   },

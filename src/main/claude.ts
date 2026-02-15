@@ -1,56 +1,48 @@
-import { spawn, ChildProcess } from 'child_process';
+import * as pty from 'node-pty';
 import { BrowserWindow, ipcMain } from 'electron';
 
-let currentProcess: ChildProcess | null = null;
+let currentPty: pty.IPty | null = null;
+let mainWindow: BrowserWindow | null = null;
 
 export function setupClaudeIPC() {
-  // Start Claude session
+  // Start Claude session with PTY
   ipcMain.handle('start-claude-session', async (event, projectPath: string) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (!win) return { success: false, error: 'Window not found' };
+    mainWindow = BrowserWindow.fromWebContents(event.sender);
+    if (!mainWindow) return { success: false, error: 'Window not found' };
 
     // Kill existing process if any
-    if (currentProcess) {
-      currentProcess.kill();
-      currentProcess = null;
+    if (currentPty) {
+      currentPty.kill();
+      currentPty = null;
     }
 
     try {
-      // Clone env and remove CLAUDECODE to allow nested sessions
+      // Get environment
       const env = { ...process.env };
       delete env.CLAUDECODE;
 
-      // Use --print for non-interactive output and --dangerously-skip-permissions
-      const args = ['--print', '--dangerously-skip-permissions'];
-
-      currentProcess = spawn('claude', args, {
+      // Start PTY with claude command
+      // Use --dangerously-skip-permissions for nested sessions
+      currentPty = pty.spawn('claude', ['--dangerously-skip-permissions'], {
         cwd: projectPath,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        shell: true,
-        env: env
+        env: env,
+        name: 'xterm-color',
+        cols: 120,
+        rows: 30,
       });
 
-      currentProcess.stdout?.on('data', (data) => {
-        const str = data.toString();
-        // Send immediately for real-time output
-        win.webContents.send('claude-output', str);
-      });
-
-      currentProcess.stderr?.on('data', (data) => {
-        const str = data.toString();
-        // Send stderr output as well
-        if (str.trim()) {
-          win.webContents.send('claude-output', str);
+      // Send output to renderer
+      currentPty.onData((data) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('claude-output', data);
         }
       });
 
-      currentProcess.on('error', (err) => {
-        win.webContents.send('claude-error', err.message);
-      });
-
-      currentProcess.on('close', (code) => {
-        win.webContents.send('claude-close', code);
-        currentProcess = null;
+      currentPty.onExit(({ exitCode }) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('claude-close', exitCode);
+        }
+        currentPty = null;
       });
 
       return { success: true };
@@ -61,8 +53,8 @@ export function setupClaudeIPC() {
 
   // Send input to Claude
   ipcMain.handle('send-claude-input', async (_event, input: string) => {
-    if (currentProcess && currentProcess.stdin) {
-      currentProcess.stdin.write(input + '\n');
+    if (currentPty) {
+      currentPty.write(input);
       return { success: true };
     }
     return { success: false, error: 'No active session' };
@@ -70,9 +62,18 @@ export function setupClaudeIPC() {
 
   // Kill Claude session
   ipcMain.handle('kill-claude-session', async () => {
-    if (currentProcess) {
-      currentProcess.kill();
-      currentProcess = null;
+    if (currentPty) {
+      currentPty.kill();
+      currentPty = null;
+      return { success: true };
+    }
+    return { success: false, error: 'No active session' };
+  });
+
+  // Resize PTY
+  ipcMain.handle('resize-pty', async (_event, cols: number, rows: number) => {
+    if (currentPty) {
+      currentPty.resize(cols, rows);
       return { success: true };
     }
     return { success: false, error: 'No active session' };

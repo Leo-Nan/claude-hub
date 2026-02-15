@@ -10,6 +10,7 @@ interface ElectronAPI {
   startClaudeSession: (projectPath: string) => Promise<{ success: boolean; error?: string }>;
   sendClaudeInput: (input: string) => Promise<{ success: boolean; error?: string }>;
   killClaudeSession: () => Promise<{ success: boolean; error?: string }>;
+  resizePty: (cols: number, rows: number) => Promise<{ success: boolean; error?: string }>;
   onClaudeOutput: (callback: (data: string) => void) => void;
   onClaudeError: (callback: (error: string) => void) => void;
   onClaudeClose: (callback: (code: number) => void) => void;

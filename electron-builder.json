@@ -5,7 +5,14 @@
     "output": "release"
   },
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "node_modules/node-pty/**/*",
+    "node_modules/node-pty-prebuilt-multiarch/**/*"
+  ],
+  "asar": true,
+  "asarUnpack": [
+    "node_modules/node-pty/**/*",
+    "node_modules/node-pty-prebuilt-multiarch/**/*"
   ],
   "win": {
     "target": "portable"
