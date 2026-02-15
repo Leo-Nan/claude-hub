@@ -167,19 +167,20 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
             backgroundColor: 'var(--bg-primary)',
             borderRadius: '8px',
             border: '1px solid var(--border-color)',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span
               style={{
-                width: '10px',
-                height: '10px',
+                width: '8px',
+                height: '8px',
                 borderRadius: '50%',
                 backgroundColor: 'var(--accent-color)',
+                boxShadow: '0 0 8px var(--accent-color)',
               }}
             />
-            <span style={{ fontWeight: 500 }}>私人秘书</span>
+            <span style={{ fontWeight: 600, fontSize: '13px' }}>私人秘书</span>
           </div>
         </div>
 
@@ -190,11 +191,12 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
             style={{
               padding: '12px 16px',
               backgroundColor: 'var(--bg-primary)',
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-color)',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              boxShadow: 'var(--shadow-sm)',
               marginLeft: '24px',
               position: 'relative',
+              transition: 'border-color 0.15s, box-shadow 0.15s',
             }}
           >
             {/* Connector line */}
