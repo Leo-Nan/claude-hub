@@ -83,7 +83,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
     term.options.mouseEnabled = true;
     term.options.cursorBlink = true;
 
-    // Handle Ctrl+C to copy, Ctrl+V to paste
+    // Handle Ctrl+C to copy, Ctrl+V to paste, Ctrl+L to clear
     term.attachCustomKeyEventHandler((e) => {
       if (e.ctrlKey && e.key === 'c') {
         const selection = term.getSelection();
@@ -98,6 +98,10 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
             term.paste(text);
           }
         });
+        return false;
+      }
+      if (e.ctrlKey && e.key === 'l') {
+        term.clear();
         return false;
       }
       return true;
@@ -162,7 +166,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
         }}
       >
         <span style={{ fontWeight: 500 }}>终端</span>
-        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Ctrl+C 复制 | Ctrl+V 粘贴</span>
+        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Ctrl+C 复制 | Ctrl+V 粘贴 | Ctrl+L 清屏</span>
         {!isSessionActive ? (
           <button
             onClick={handleStartSession}
