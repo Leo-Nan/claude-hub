@@ -1,6 +1,10 @@
 import React, { useEffect } from 'react';
 import Sidebar from './components/Sidebar';
+import Terminal from './components/Terminal';
+import AgentTree from './components/AgentTree';
+import StatusBar from './components/StatusBar';
 import { useAppStore } from './stores/appStore';
+import { Agent } from '@shared/types';
 
 function App() {
   const {
@@ -41,6 +45,16 @@ function App() {
     setProjects(updatedProjects);
   };
 
+  const handleAgentStatusChange = async (agentId: string, status: Agent['status']) => {
+    if (!currentProject) return;
+    const updated = await window.electronAPI.updateAgentStatus(
+      currentProject.id,
+      agentId,
+      status
+    );
+    setCurrentProject(updated);
+  };
+
   return (
     <div
       style={{
@@ -57,26 +71,14 @@ function App() {
         onRemoveProject={handleRemoveProject}
       />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flex: 1, padding: '20px' }}>
-          <h2>{currentProject?.name || '请选择项目'}</h2>
-          <p style={{ color: '#666', marginTop: '8px' }}>
-            {currentProject?.path || '点击左侧项目或新建项目开始'}
-          </p>
-        </div>
-        <div
-          style={{
-            height: '24px',
-            borderTop: '1px solid #e0e0e0',
-            padding: '0 12px',
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: '12px',
-            color: '#666',
-            backgroundColor: '#f5f5f5',
-          }}
-        >
-          Claude Hub v1.0.0
-        </div>
+        <Terminal projectPath={currentProject?.path || null} />
+        {currentProject && (
+          <AgentTree
+            agents={currentProject.agents}
+            onStatusChange={handleAgentStatusChange}
+          />
+        )}
+        <StatusBar currentProject={currentProject} />
       </div>
     </div>
   );
