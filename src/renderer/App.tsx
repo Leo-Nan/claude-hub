@@ -60,10 +60,10 @@ function App() {
     initTheme();
   }, [initTheme]);
 
-  // 自动关闭错误提示（5秒后）
+  // 自动关闭错误提示（10秒后）
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => setError(null), 5000);
+      const timer = setTimeout(() => setError(null), 10000);
       return () => clearTimeout(timer);
     }
   }, [error]);
