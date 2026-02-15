@@ -20,8 +20,8 @@ export function setupClaudeIPC() {
       const env = { ...process.env };
       delete env.CLAUDECODE;
 
-      // Use --dangerously-skip-permissions for smoother experience
-      const args = ['--dangerously-skip-permissions'];
+      // Use --print for non-interactive output and --dangerously-skip-permissions
+      const args = ['--print', '--dangerously-skip-permissions'];
 
       currentProcess = spawn('claude', args, {
         cwd: projectPath,
@@ -30,22 +30,16 @@ export function setupClaudeIPC() {
         env: env
       });
 
-      let buffer = '';
-
       currentProcess.stdout?.on('data', (data) => {
         const str = data.toString();
-        buffer += str;
-        // Flush buffer when we see a prompt or complete output
-        if (str.includes('> ') || str.includes('\n')) {
-          win.webContents.send('claude-output', buffer);
-          buffer = '';
-        }
+        // Send immediately for real-time output
+        win.webContents.send('claude-output', str);
       });
 
       currentProcess.stderr?.on('data', (data) => {
         const str = data.toString();
-        // Only show non-empty stderr that's not about --print
-        if (str.trim() && !str.includes('--print')) {
+        // Send stderr output as well
+        if (str.trim()) {
           win.webContents.send('claude-output', str);
         }
       });
@@ -55,9 +49,6 @@ export function setupClaudeIPC() {
       });
 
       currentProcess.on('close', (code) => {
-        if (buffer) {
-          win.webContents.send('claude-output', buffer);
-        }
         win.webContents.send('claude-close', code);
         currentProcess = null;
       });
