@@ -1,6 +1,14 @@
 import { ipcMain, dialog } from 'electron';
+import * as fs from 'fs';
 import * as store from './store';
 import { setupClaudeIPC } from './claude';
+import { Agent } from '../shared/types';
+
+const VALID_STATUSES: Agent['status'][] = ['active', 'idle', 'thinking'];
+
+function isValidStatus(status: string): status is Agent['status'] {
+  return VALID_STATUSES.includes(status as Agent['status']);
+}
 
 export function setupIPC() {
   // Get all projects
@@ -17,7 +25,20 @@ export function setupIPC() {
       return null;
     }
     const projectPath = result.filePaths[0];
+
+    // 检查路径是否存在
+    if (!fs.existsSync(projectPath)) {
+      return { error: '路径不存在' };
+    }
+
     const projectName = projectPath.split(/[\\/]/).pop() || 'Untitled';
+
+    // 检查是否已存在相同路径的项目
+    const existing = store.getProjects().find(p => p.path === projectPath);
+    if (existing) {
+      return { error: '该项目已存在' };
+    }
+
     return store.addProject(projectName, projectPath);
   });
 
@@ -40,7 +61,10 @@ export function setupIPC() {
 
   // Update agent status
   ipcMain.handle('update-agent-status', (_event, projectId: string, agentId: string, status: string) => {
-    store.updateAgentStatus(projectId, agentId, status as any);
+    if (!isValidStatus(status)) {
+      return { error: `Invalid status: ${status}. Must be one of: ${VALID_STATUSES.join(', ')}` };
+    }
+    store.updateAgentStatus(projectId, agentId, status);
     return store.getCurrentProject();
   });
 
