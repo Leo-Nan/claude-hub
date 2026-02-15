@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
@@ -11,15 +11,14 @@ interface TerminalProps {
 const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
-  const [isActive, setIsActive] = useState(false);
-  const isActiveRef = useRef(isActive);
+  const isActiveRef = useRef(false);
   const listenersSetupRef = useRef(false);
-  const { setSessionActive } = useAppStore();
+  const { isSessionActive, setSessionActive } = useAppStore();
 
-  // 保持 ref 与 state 同步
+  // 保持 ref 与 store 同步
   useEffect(() => {
-    isActiveRef.current = isActive;
-  }, [isActive]);
+    isActiveRef.current = isSessionActive;
+  }, [isSessionActive]);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -68,7 +67,6 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
         if (xtermRef.current) {
           xtermRef.current.writeln(`\x1b[31m错误: ${error}\x1b[0m`);
         }
-        setIsActive(false);
         setSessionActive(false);
       });
 
@@ -77,7 +75,6 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
         if (xtermRef.current) {
           xtermRef.current.writeln(`\x1b[33m会话已结束 (退出码: ${code})\x1b[0m`);
         }
-        setIsActive(false);
         setSessionActive(false);
       });
     }
@@ -134,7 +131,6 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
     const result = await window.electronAPI.startClaudeSession(projectPath);
 
     if (result.success) {
-      setIsActive(true);
       setSessionActive(true, Date.now());
       term.writeln('\x1b[32mClaude 会话已启动！\x1b[0m');
       term.writeln('');
@@ -146,7 +142,6 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
 
   const handleKillSession = async () => {
     await window.electronAPI.killClaudeSession();
-    setIsActive(false);
     setSessionActive(false);
     if (xtermRef.current) {
       xtermRef.current.writeln('\x1b[33m会话已终止\x1b[0m');
@@ -168,7 +163,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       >
         <span style={{ fontWeight: 500 }}>终端</span>
         <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Ctrl+C 复制 | Ctrl+V 粘贴</span>
-        {!isActive ? (
+        {!isSessionActive ? (
           <button
             onClick={handleStartSession}
             disabled={!projectPath}

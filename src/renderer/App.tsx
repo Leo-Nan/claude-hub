@@ -92,13 +92,13 @@ function App() {
     try {
       const project = await window.electronAPI.setCurrentProject(id);
       if (project && 'error' in project) {
-        setError(project.error);
+        setError(getFriendlyError(project.error));
         return;
       }
       setCurrentProject(project);
     } catch (err) {
       console.error('选择项目失败:', err);
-      setError(err instanceof Error ? err.message : '选择项目失败');
+      setError(handleError(err, '选择项目失败'));
     }
   };
 
@@ -108,14 +108,14 @@ function App() {
       const result = await window.electronAPI.addProject();
       if (result) {
         if ('error' in result) {
-          setError(result.error);
+          setError(getFriendlyError(result.error));
           return;
         }
         addProject(result);
       }
     } catch (err) {
       console.error('添加项目失败:', err);
-      setError(err instanceof Error ? err.message : '添加项目失败');
+      setError(handleError(err, '添加项目失败'));
     } finally {
       setIsAddingProject(false);
     }
@@ -125,13 +125,13 @@ function App() {
     try {
       const updatedProjects = await window.electronAPI.removeProject(id);
       if (updatedProjects && 'error' in updatedProjects) {
-        setError(updatedProjects.error);
+        setError(getFriendlyError(updatedProjects.error));
         return;
       }
       setProjects(updatedProjects);
     } catch (err) {
       console.error('删除项目失败:', err);
-      setError(err instanceof Error ? err.message : '删除项目失败');
+      setError(handleError(err, '删除项目失败'));
     }
   };
 
@@ -144,13 +144,13 @@ function App() {
         status
       );
       if (result && 'error' in result) {
-        setError(result.error);
+        setError(getFriendlyError(result.error));
         return;
       }
       setCurrentProject(result);
     } catch (err) {
       console.error('更新 Agent 状态失败:', err);
-      setError(err instanceof Error ? err.message : '更新失败');
+      setError(handleError(err, '更新 Agent 状态失败'));
     }
   };
 
@@ -175,26 +175,36 @@ function App() {
               right: 0,
               backgroundColor: 'var(--danger-color)',
               color: 'white',
-              padding: '8px 16px',
+              padding: '10px 16px',
               fontSize: '14px',
               zIndex: 1000,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
             }}
           >
-            <span>错误: {error}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '16px' }}>⚠️</span>
+              <span>{error}</span>
+            </div>
             <button
               onClick={() => setError(null)}
               style={{
-                background: 'none',
+                background: 'rgba(255,255,255,0.2)',
                 border: 'none',
                 color: 'white',
                 cursor: 'pointer',
-                fontSize: '16px',
+                fontSize: '14px',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                transition: 'background 0.2s',
               }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
             >
-              ×
+              关闭
             </button>
           </div>
         )}

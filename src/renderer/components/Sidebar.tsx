@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Project } from '@shared/types';
 import Modal from './Modal';
 
@@ -21,6 +21,59 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Sync selected index with current project
+  useEffect(() => {
+    if (currentProjectId && projects.length > 0) {
+      const index = projects.findIndex(p => p.id === currentProjectId);
+      if (index !== -1) {
+        setSelectedIndex(index);
+      }
+    }
+  }, [currentProjectId, projects]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (modalOpen) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => {
+          const newIndex = prev < projects.length - 1 ? prev + 1 : 0;
+          return newIndex;
+        });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => {
+          const newIndex = prev > 0 ? prev - 1 : projects.length - 1;
+          return newIndex;
+        });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedIndex >= 0 && selectedIndex < projects.length) {
+          onSelectProject(projects[selectedIndex].id);
+        } else if (projects.length === 0) {
+          onAddProject();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIndex, projects, modalOpen, onSelectProject, onAddProject]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (listRef.current && selectedIndex >= 0) {
+      const items = listRef.current.querySelectorAll('[data-project-item]');
+      if (items[selectedIndex]) {
+        items[selectedIndex].scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [selectedIndex]);
 
   const handleContextMenu = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -73,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         >
           项目列表
         </div>
-        <div style={{ flex: 1, overflow: 'auto' }}>
+        <div ref={listRef} style={{ flex: 1, overflow: 'auto' }}>
           {projects.length === 0 ? (
             <div style={{
               padding: '20px 12px',
@@ -92,18 +145,27 @@ const Sidebar: React.FC<SidebarProps> = ({
               </span>
             </div>
           ) : (
-            projects.map((project) => (
+            projects.map((project, index) => (
               <div
                 key={project.id}
+                data-project-item
                 onClick={() => onSelectProject(project.id)}
                 onContextMenu={(e) => handleContextMenu(e, project.id)}
                 style={{
                   padding: '10px 12px',
                   cursor: 'pointer',
                   backgroundColor:
-                    project.id === currentProjectId ? 'var(--hover-bg)' : 'transparent',
+                    project.id === currentProjectId
+                      ? 'var(--hover-bg)'
+                      : selectedIndex === index
+                        ? 'var(--bg-primary)'
+                        : 'transparent',
                   borderLeft:
-                    project.id === currentProjectId ? '3px solid var(--accent-color)' : '3px solid transparent',
+                    project.id === currentProjectId
+                      ? '3px solid var(--accent-color)'
+                      : selectedIndex === index
+                        ? '3px solid var(--success-color)'
+                        : '3px solid transparent',
                 }}
               >
                 {project.name}
