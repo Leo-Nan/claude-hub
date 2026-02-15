@@ -5,6 +5,17 @@ import { setupClaudeCleanup } from './claude';
 
 let mainWindow: BrowserWindow | null = null;
 
+// Global error handlers
+process.on('uncaughtException', (error) => {
+  console.error('[FATAL] Uncaught Exception:', error);
+  // Try to show error dialog before exit
+  app.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[ERROR] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,

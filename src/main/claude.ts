@@ -37,12 +37,19 @@ export function setupClaudeIPC() {
       // Start PTY with claude command
       // Use --dangerously-skip-permissions for nested sessions
       // Try common installation paths
+      const localAppData = process.env.LOCALAPPDATA || '';
+      const appData = process.env.APPDATA || '';
       const claudePaths = [
         'claude',
         'C:\\Users\\Windows11\\.local\\bin\\claude.exe',
-        process.env.LOCALAPPDATA + '\\npm\\claude.exe',
-        process.env.APPDATA + '\\npm\\claude.exe',
-      ];
+        localAppData ? localAppData + '\\npm\\claude.exe' : null,
+        appData ? appData + '\\npm\\claude.exe' : null,
+      ].filter(Boolean) as string[];
+
+      // Validate project path
+      if (!projectPath || !require('fs').existsSync(projectPath)) {
+        return { success: false, error: '项目路径不存在或无效' };
+      }
 
       let claudeCmd = 'claude';
       for (const p of claudePaths) {

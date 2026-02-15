@@ -16,9 +16,10 @@ interface AppState {
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
   setSessionActive: (active: boolean, startTime?: number | null) => void;
+  initTheme: () => Promise<void>;
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   projects: [],
   currentProject: null,
   isLoading: false,
@@ -39,14 +40,30 @@ export const useAppStore = create<AppState>((set) => ({
         state.currentProject?.id === id ? null : state.currentProject,
     })),
   setLoading: (isLoading) => set({ isLoading }),
-  setTheme: (theme) => set({ theme }),
-  toggleTheme: () =>
-    set((state) => ({
-      theme: state.theme === 'light' ? 'dark' : 'light',
-    })),
+  setTheme: (theme) => {
+    set({ theme });
+    // Persist to electron-store
+    window.electronAPI?.setTheme(theme);
+  },
+  toggleTheme: () => {
+    const newTheme = get().theme === 'light' ? 'dark' : 'light';
+    set({ theme: newTheme });
+    // Persist to electron-store
+    window.electronAPI?.setTheme(newTheme);
+  },
   setSessionActive: (active, startTime = null) =>
     set({
       isSessionActive: active,
       sessionStartTime: active ? (startTime ?? Date.now()) : null,
     }),
+  initTheme: async () => {
+    try {
+      const savedTheme = await window.electronAPI?.getTheme();
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        set({ theme: savedTheme });
+      }
+    } catch (e) {
+      console.error('Failed to load theme:', e);
+    }
+  },
 }));

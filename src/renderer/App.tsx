@@ -50,9 +50,15 @@ function App() {
     addProject,
     removeProject,
     theme,
+    initTheme,
   } = useAppStore();
   const [error, setError] = useState<string | null>(null);
   const [isAddingProject, setIsAddingProject] = useState(false);
+
+  // 初始化主题
+  useEffect(() => {
+    initTheme();
+  }, [initTheme]);
 
   // 自动关闭错误提示（5秒后）
   useEffect(() => {

@@ -68,6 +68,16 @@ export function setupIPC() {
     return store.getCurrentProject();
   });
 
+  // Theme management
+  ipcMain.handle('get-theme', () => {
+    return store.getTheme();
+  });
+
+  ipcMain.handle('set-theme', (_event, theme: 'light' | 'dark') => {
+    store.setTheme(theme);
+    return theme;
+  });
+
   // Setup Claude process IPC
   setupClaudeIPC();
 }

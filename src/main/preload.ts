@@ -9,6 +9,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateAgentStatus: (projectId: string, agentId: string, status: string) =>
     ipcRenderer.invoke('update-agent-status', projectId, agentId, status),
 
+  // Theme management
+  getTheme: () => ipcRenderer.invoke('get-theme'),
+  setTheme: (theme: 'light' | 'dark') => ipcRenderer.invoke('set-theme', theme),
+
   // Claude session management
   startClaudeSession: (projectPath: string) => ipcRenderer.invoke('start-claude-session', projectPath),
   sendClaudeInput: (input: string) => ipcRenderer.invoke('send-claude-input', input),

@@ -67,4 +67,12 @@ export function updateAgentStatus(projectId: string, agentId: string, status: Ag
   }
 }
 
+export function getTheme(): 'light' | 'dark' {
+  return store.get('theme') || 'light';
+}
+
+export function setTheme(theme: 'light' | 'dark'): void {
+  store.set('theme', theme);
+}
+
 export default store;
