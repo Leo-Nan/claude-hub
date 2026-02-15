@@ -1,0 +1,84 @@
+# Claude Hub 开发 Agent Team 配置
+
+## 团队结构
+
+```
+Claude Hub 项目开发团队：
+
+- 团队负责人 (Team Lead) - 主会话，协调工作、分配任务
+- 前端工程师 (Frontend Engineer) - React 组件、UI 开发
+- 后端工程师 (Backend Engineer) - Electron 主进程、IPC、数据持久化
+- 测试工程师 (QA Engineer) - 单元测试、集成测试
+```
+
+## 使用方法
+
+### 启动团队
+
+在 Claude Code 中运行以下命令：
+
+```
+Create an agent team to develop Claude Hub features. Use these teammates:
+- Frontend: Focus on React components, UI/UX, user interactions
+- Backend: Focus on Electron main process, IPC, data persistence
+- QA: Focus on testing, bug verification, quality assurance
+
+Each teammate should work independently and communicate through the team lead.
+```
+
+### 或者使用预定义配置
+
+我先创建一个项目级的 Agent 配置文件，方便快速启动：
+<minimax:tool_call>
+<invoke name="Write">
+<parameter name="content">{
+  "teamName": "claude-hub-dev",
+  "description": "Claude Hub 项目开发团队",
+  "teammates": [
+    {
+      "name": "frontend-engineer",
+      "role": "Frontend Engineer",
+      "description": "负责 React 组件开发、UI/UX 改进、样式优化",
+      "focus": [
+        "src/renderer/**/*",
+        "组件开发",
+        "用户界面",
+        "样式与交互"
+      ]
+    },
+    {
+      "name": "backend-engineer",
+      "role": "Backend Engineer",
+      "description": "负责 Electron 主进程、IPC 通信、数据持久化、系统集成",
+      "focus": [
+        "src/main/**/*",
+        "Electron 主进程",
+        "IPC 通信",
+        "系统集成"
+      ]
+    },
+    {
+      "name": "qa-engineer",
+      "role": "QA Engineer",
+      "description": "负责测试、bug 修复验证、代码审查、质量保证",
+      "focus": [
+        "测试验证",
+        "Bug 修复",
+        "代码审查",
+        "质量保证"
+      ]
+    }
+  ],
+  "workflow": {
+    "taskAssignment": "lead assigns tasks based on teammate focus areas",
+    "communication": "teammates report to lead, can communicate with each other",
+    "review": "QA reviews all changes before merge",
+    "coordination": "lead coordinates parallel work to avoid conflicts"
+  },
+  "bestPractices": [
+    "每个队友拥有独立的工作文件，避免冲突",
+    "负责人将工作分解为清晰的任务单元",
+    "队友完成工作后通知负责人进行审查",
+    "定期检查进度，重定向不起作用的方法"
+  ]
+}
