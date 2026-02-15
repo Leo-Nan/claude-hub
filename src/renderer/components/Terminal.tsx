@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
-import { SelectionModel } from 'xterm-addon-selection';
 import 'xterm/css/xterm.css';
 
 interface TerminalProps {
@@ -12,33 +11,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const [isActive, setIsActive] = useState(false);
-
-  const setupListeners = useCallback(() => {
-    if (!xtermRef.current) return;
-
-    // Listen for Claude output
-    window.electronAPI.onClaudeOutput((data: string) => {
-      if (xtermRef.current) {
-        xtermRef.current.write(data);
-      }
-    });
-
-    // Listen for errors
-    window.electronAPI.onClaudeError((error: string) => {
-      if (xtermRef.current) {
-        xtermRef.current.writeln(`\x1b[31m错误: ${error}\x1b[0m`);
-      }
-      setIsActive(false);
-    });
-
-    // Listen for close
-    window.electronAPI.onClaudeClose((code: number) => {
-      if (xtermRef.current) {
-        xtermRef.current.writeln(`\x1b[33m会话已结束 (退出码: ${code})\x1b[0m`);
-      }
-      setIsActive(false);
-    });
-  }, []);
+  const listenersSetupRef = useRef(false);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -52,7 +25,6 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
         foreground: '#d4d4d4',
         selectionBackground: 'rgba(255, 255, 255, 0.3)',
       },
-      allowProposedApi: true,
     });
 
     const fitAddon = new FitAddon();
@@ -72,7 +44,35 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       term.writeln('\x1b[31m请先选择项目\x1b[0m');
     }
 
-    // Enable mouse and key events for selection
+    // Only setup listeners once
+    if (!listenersSetupRef.current) {
+      listenersSetupRef.current = true;
+
+      // Listen for Claude output
+      window.electronAPI.onClaudeOutput((data: string) => {
+        if (xtermRef.current) {
+          xtermRef.current.write(data);
+        }
+      });
+
+      // Listen for errors
+      window.electronAPI.onClaudeError((error: string) => {
+        if (xtermRef.current) {
+          xtermRef.current.writeln(`\x1b[31m错误: ${error}\x1b[0m`);
+        }
+        setIsActive(false);
+      });
+
+      // Listen for close
+      window.electronAPI.onClaudeClose((code: number) => {
+        if (xtermRef.current) {
+          xtermRef.current.writeln(`\x1b[33m会话已结束 (退出码: ${code})\x1b[0m`);
+        }
+        setIsActive(false);
+      });
+    }
+
+    // Enable mouse events for selection
     term.options.mouseEnabled = true;
     term.options.cursorBlink = true;
 
@@ -102,8 +102,6 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       }
     });
 
-    setupListeners();
-
     const handleResize = () => {
       fitAddon.fit();
     };
@@ -114,7 +112,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       window.removeEventListener('resize', handleResize);
       term.dispose();
     };
-  }, [projectPath, setupListeners, isActive]);
+  }, [projectPath, isActive]);
 
   const handleStartSession = async () => {
     if (!projectPath || !xtermRef.current) return;
@@ -131,7 +129,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       term.writeln('');
     } else {
       term.writeln(`\x1b[31m启动失败: ${result.error}\x1b[0m`);
-      term.writeln('\x1b[33m请确保已安装 Claude CLI: npm install -g @anthropic-ai/claude-code\x1b[0m');
+      term.writeln('\x1b[33m请确保已安装 Claude CLI\x1b[0m');
     }
   };
 

@@ -16,21 +16,38 @@ export function setupClaudeIPC() {
     }
 
     try {
-      // Try to find claude CLI
-      const claudePath = 'claude';
+      // Clone env and remove CLAUDECODE to allow nested sessions
+      const env = { ...process.env };
+      delete env.CLAUDECODE;
 
-      currentProcess = spawn(claudePath, [], {
+      // Use --dangerously-skip-permissions for smoother experience
+      const args = ['--dangerously-skip-permissions'];
+
+      currentProcess = spawn('claude', args, {
         cwd: projectPath,
         stdio: ['pipe', 'pipe', 'pipe'],
         shell: true,
+        env: env
       });
 
+      let buffer = '';
+
       currentProcess.stdout?.on('data', (data) => {
-        win.webContents.send('claude-output', data.toString());
+        const str = data.toString();
+        buffer += str;
+        // Flush buffer when we see a prompt or complete output
+        if (str.includes('> ') || str.includes('\n')) {
+          win.webContents.send('claude-output', buffer);
+          buffer = '';
+        }
       });
 
       currentProcess.stderr?.on('data', (data) => {
-        win.webContents.send('claude-output', data.toString());
+        const str = data.toString();
+        // Only show non-empty stderr that's not about --print
+        if (str.trim() && !str.includes('--print')) {
+          win.webContents.send('claude-output', str);
+        }
       });
 
       currentProcess.on('error', (err) => {
@@ -38,6 +55,9 @@ export function setupClaudeIPC() {
       });
 
       currentProcess.on('close', (code) => {
+        if (buffer) {
+          win.webContents.send('claude-output', buffer);
+        }
         win.webContents.send('claude-close', code);
         currentProcess = null;
       });
