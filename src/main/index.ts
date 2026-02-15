@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 import { setupIPC } from './ipc';
-import { setupClaudeCleanup } from './claude';
+import { setupClaudeCleanup, cleanupClaudeSession } from './claude';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -65,4 +65,9 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Cleanup before quit
+app.on('before-quit', () => {
+  cleanupClaudeSession();
 });
