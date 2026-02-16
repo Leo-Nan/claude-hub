@@ -10,7 +10,15 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
   const [localTime, setLocalTime] = useState(0);
   const [currentTime, setCurrentTime] = useState('');
   const [copied, setCopied] = useState(false);
+  const [version, setVersion] = useState('1.0.0');
   const { theme, toggleTheme, isSessionActive, sessionStartTime } = useAppStore();
+
+  // 获取版本号
+  useEffect(() => {
+    window.electronAPI?.getVersion().then((v: string) => {
+      if (v) setVersion(v);
+    });
+  }, []);
 
   // 监听会话状态变化，开始计时
   useEffect(() => {
@@ -178,7 +186,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
 
         {/* 版本信息 */}
         <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
-          Claude Hub v1.0.0
+          Claude Hub v{version}
         </span>
       </div>
     </div>

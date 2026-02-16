@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Theme management
   getTheme: () => ipcRenderer.invoke('get-theme'),
   setTheme: (theme: 'light' | 'dark') => ipcRenderer.invoke('set-theme', theme),
+  getVersion: () => ipcRenderer.invoke('get-version'),
 
   // Claude session management
   startClaudeSession: (projectPath: string) => ipcRenderer.invoke('start-claude-session', projectPath),

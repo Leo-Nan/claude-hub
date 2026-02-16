@@ -89,6 +89,11 @@ export function setupIPC() {
     return store.getTheme();
   });
 
+  ipcMain.handle('get-version', () => {
+    const pkg = require('../package.json');
+    return pkg.version;
+  });
+
   ipcMain.handle('set-theme', (_event, theme: unknown) => {
     if (!isValidTheme(theme)) {
       return { error: '无效的主题' };
