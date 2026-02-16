@@ -8,30 +8,53 @@ interface TerminalProps {
   projectPath: string | null;
 }
 
+// 获取主题对应的终端颜色
+const getTerminalTheme = (theme: 'light' | 'dark') => ({
+  background: theme === 'dark' ? '#0d1117' : '#1e1e1e',
+  foreground: theme === 'dark' ? '#c9d1d9' : '#d4d4d4',
+  selectionBackground: 'rgba(255, 255, 255, 0.3)',
+  cursor: theme === 'dark' ? '#58a6ff' : '#aeafad',
+  black: theme === 'dark' ? '#484f58' : '#000000',
+  red: theme === 'dark' ? '#ff7b72' : '#cd3131',
+  green: theme === 'dark' ? '#3fb950' : '#0dbc79',
+  yellow: theme === 'dark' ? '#d29922' : '#e5e510',
+  blue: theme === 'dark' ? '#58a6ff' : '#2472c8',
+  magenta: theme === 'dark' ? '#bc8cff' : '#bc4f00',
+  cyan: theme === 'dark' ? '#39c5cf' : '#11a8cd',
+  white: theme === 'dark' ? '#b1bac4' : '#e5e5e5',
+  brightBlack: theme === 'dark' ? '#6e7681' : '#666666',
+  brightRed: theme === 'dark' ? '#ffa198' : '#f14c4c',
+  brightGreen: theme === 'dark' ? '#56d364' : '#23d18b',
+  brightYellow: theme === 'dark' ? '#e3b341' : '#f5f543',
+  brightBlue: theme === 'dark' ? '#79c0ff' : '#3b8eea',
+  brightMagenta: theme === 'dark' ? '#d2a8ff' : '#d670d6',
+  brightCyan: theme === 'dark' ? '#56d4dd' : '#29b8db',
+  brightWhite: theme === 'dark' ? '#f0f6fc' : '#ffffff',
+});
+
 const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
   const isActiveRef = useRef(false);
   const listenersSetupRef = useRef(false);
-  const { isSessionActive, setSessionActive } = useAppStore();
+  const initializedRef = useRef(false);
+  const { isSessionActive, setSessionActive, theme } = useAppStore();
 
   // 保持 ref 与 store 同步
   useEffect(() => {
     isActiveRef.current = isSessionActive;
   }, [isSessionActive]);
 
-  useEffect(() => {
-    if (!terminalRef.current) return;
+  // 初始化终端
+  const initTerminal = () => {
+    if (!terminalRef.current || initializedRef.current) return;
 
     const term = new XTerm({
       cursorBlink: true,
       fontSize: 14,
       fontFamily: 'Consolas, Monaco, monospace',
-      theme: {
-        background: 'var(--terminal-bg, #1e1e1e)',
-        foreground: 'var(--terminal-fg, #d4d4d4)',
-        selectionBackground: 'rgba(255, 255, 255, 0.3)',
-      },
+      theme: getTerminalTheme(theme),
     });
 
     const fitAddon = new FitAddon();
@@ -40,7 +63,9 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
     fitAddon.fit();
 
     xtermRef.current = term;
+    fitAddonRef.current = fitAddon;
 
+    // 显示欢迎信息
     term.writeln('\x1b[36mClaude Hub Terminal\x1b[0m');
     term.writeln('');
 
@@ -51,18 +76,18 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       term.writeln('\x1b[31m请先选择项目\x1b[0m');
     }
 
-    // Only setup listeners once
+    // 只设置一次监听器
     if (!listenersSetupRef.current) {
       listenersSetupRef.current = true;
 
-      // Listen for Claude output
+      // 监听 Claude 输出
       window.electronAPI.onClaudeOutput((data: string) => {
         if (xtermRef.current) {
           xtermRef.current.write(data);
         }
       });
 
-      // Listen for errors
+      // 监听错误
       window.electronAPI.onClaudeError((error: string) => {
         if (xtermRef.current) {
           xtermRef.current.writeln(`\x1b[31m错误: ${error}\x1b[0m`);
@@ -70,7 +95,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
         setSessionActive(false);
       });
 
-      // Listen for close
+      // 监听关闭
       window.electronAPI.onClaudeClose((code: number) => {
         if (xtermRef.current) {
           xtermRef.current.writeln(`\x1b[33m会话已结束 (退出码: ${code})\x1b[0m`);
@@ -79,11 +104,11 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
       });
     }
 
-    // Enable mouse events for selection
+    // 启用鼠标事件用于选择
     term.options.mouseEnabled = true;
     term.options.cursorBlink = true;
 
-    // Handle Ctrl+C to copy, Ctrl+V to paste, Ctrl+L to clear
+    // 处理 Ctrl+C 复制, Ctrl+V 粘贴, Ctrl+L 清屏
     term.attachCustomKeyEventHandler((e) => {
       if (e.ctrlKey && e.key === 'c') {
         const selection = term.getSelection();
@@ -119,10 +144,46 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
 
     window.addEventListener('resize', handleResize);
 
+    initializedRef.current = true;
+  };
+
+  // 首次加载时初始化终端
+  useEffect(() => {
+    initTerminal();
+
     return () => {
-      window.removeEventListener('resize', handleResize);
-      term.dispose();
+      window.removeEventListener('resize', () => {});
+      if (xtermRef.current) {
+        xtermRef.current.dispose();
+        xtermRef.current = null;
+        initializedRef.current = false;
+      }
     };
+    // 只在组件挂载时执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 监听主题变化，更新终端颜色
+  useEffect(() => {
+    if (xtermRef.current) {
+      xtermRef.current.options.theme = getTerminalTheme(theme);
+    }
+  }, [theme]);
+
+  // 监听 projectPath 变化，更新欢迎信息（不重新创建终端）
+  useEffect(() => {
+    if (xtermRef.current && initializedRef.current) {
+      const term = xtermRef.current;
+      // 添加分隔线和新项目信息
+      term.writeln('');
+      term.writeln('\x1b[90m─────────────────────────────────\x1b[0m');
+      if (projectPath) {
+        term.writeln(`\x1b[32m切换项目:\x1b[0m ${projectPath}`);
+        term.writeln('\x1b[33m点击下方按钮启动 Claude 会话\x1b[0m');
+      } else {
+        term.writeln('\x1b[31m请先选择项目\x1b[0m');
+      }
+    }
   }, [projectPath]);
 
   const handleStartSession = async () => {
