@@ -1,18 +1,20 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 import { useAppStore } from '../stores/appStore';
 
-// 会话终端信息
+// 单个会话终端
 interface SessionTerminal {
   sessionId: string;
   projectPath: string;
+  projectName: string;
   term: XTerm;
   fitAddon: FitAddon;
+  container: HTMLDivElement;
 }
 
-// 获取主题对应的终端颜色
+// 主题颜色配置
 const getTerminalTheme = (theme: 'light' | 'dark') => ({
   background: theme === 'dark' ? '#0d1117' : '#1e1e1e',
   foreground: theme === 'dark' ? '#c9d1d9' : '#d4d4d4',
@@ -36,218 +38,64 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
   brightWhite: theme === 'dark' ? '#f0f6fc' : '#ffffff',
 });
 
-// 创建终端实例
-const createTerminal = (
-  container: HTMLElement,
-  theme: 'light' | 'dark',
-  projectPath: string
-): { term: XTerm; fitAddon: FitAddon } => {
-  const term = new XTerm({
-    cursorBlink: true,
-    fontSize: 14,
-    fontFamily: 'Consolas, Monaco, monospace',
-    theme: getTerminalTheme(theme),
-  });
-
-  const fitAddon = new FitAddon();
-  term.loadAddon(fitAddon);
-  term.open(container);
-  fitAddon.fit();
-
-  // 显示欢迎信息
-  term.writeln('\x1b[36mClaude Hub Terminal\x1b[0m');
-  term.writeln('');
-  term.writeln(`\x1b[32m项目路径:\x1b[0m ${projectPath}`);
-  term.writeln('\x1b[33m点击下方按钮启动 Claude 会话\x1b[0m');
-
-  return { term, fitAddon };
-};
-
-interface TerminalTabsProps {
-  sessions: SessionTerminal[];
-  activeSessionId: string | null;
-  onSelectSession: (sessionId: string) => void;
-  onCloseSession: (sessionId: string) => void;
-  theme: 'light' | 'dark';
-}
-
-const TerminalTabs: React.FC<TerminalTabsProps> = ({
-  sessions,
-  activeSessionId,
-  onSelectSession,
-  onCloseSession,
-  theme,
-}) => {
-  if (sessions.length === 0) return null;
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        gap: '2px',
-        padding: '4px 8px',
-        backgroundColor: 'var(--bg-tertiary)',
-        borderBottom: '1px solid var(--border-color)',
-        overflowX: 'auto',
-      }}
-    >
-      {sessions.map((session) => (
-        <div
-          key={session.sessionId}
-          onClick={() => onSelectSession(session.sessionId)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '4px 10px',
-            backgroundColor:
-              activeSessionId === session.sessionId
-                ? 'var(--bg-primary)'
-                : 'var(--bg-secondary)',
-            borderRadius: 'var(--radius-sm)',
-            cursor: 'pointer',
-            fontSize: '12px',
-            color:
-              activeSessionId === session.sessionId
-                ? 'var(--text-primary)'
-                : 'var(--text-secondary)',
-            border:
-              activeSessionId === session.sessionId
-                ? '1px solid var(--border-color)'
-                : '1px solid transparent',
-          }}
-        >
-          <span
-            style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--success-color)',
-            }}
-          />
-          <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {session.projectPath.split(/[/\\]/).pop()}
-          </span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onCloseSession(session.sessionId);
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '0 2px',
-              fontSize: '14px',
-              lineHeight: 1,
-            }}
-          >
-            ×
-          </button>
-        </div>
-      ))}
-      {sessions.length < 3 && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            padding: '4px 8px',
-            color: 'var(--text-muted)',
-            fontSize: '12px',
-          }}
-        >
-          + 添加
-        </div>
-      )}
-    </div>
-  );
-};
-
 const Terminal: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [sessions, setSessions] = useState<SessionTerminal[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const { theme, setSessionActive } = useAppStore();
+  const { theme, setSessionActive, currentProject } = useAppStore();
 
-  // 获取当前活动的项目路径
-  const { currentProject } = useAppStore();
-
-  // 监听主题变化
-  useEffect(() => {
+  // 显示指定的会话终端
+  const showSession = useCallback((sessionId: string) => {
     sessions.forEach((session) => {
-      session.term.options.theme = getTerminalTheme(theme);
+      session.container.style.display = session.sessionId === sessionId ? 'block' : 'none';
     });
-  }, [theme, sessions]);
-
-  // 设置事件监听
-  useEffect(() => {
-    // 监听输出
-    window.electronAPI.onClaudeOutput(({ sessionId, data }) => {
-      setSessions((prev) => {
-        const session = prev.find((s) => s.sessionId === sessionId);
-        if (session) {
-          session.term.write(data);
-        }
-        return [...prev];
-      });
-    });
-
-    // 监听关闭
-    window.electronAPI.onClaudeClose(({ sessionId, exitCode }) => {
-      setSessions((prev) => {
-        const session = prev.find((s) => s.sessionId === sessionId);
-        if (session) {
-          session.term.writeln(`\x1b[33m会话已结束 (退出码: ${exitCode})\x1b[0m`);
-        }
-        // 不自动删除，让用户看到结束信息
-        return [...prev];
-      });
-
-      // 如果是活动会话，更新状态
-      if (sessionId === activeSessionId) {
-        setSessionActive(false);
+    // 延迟 fit 以等待 DOM 更新
+    setTimeout(() => {
+      const session = sessions.find((s) => s.sessionId === sessionId);
+      if (session) {
+        session.fitAddon.fit();
       }
+    }, 50);
+  }, [sessions]);
+
+  // 创建终端并显示
+  const createAndShowTerminal = useCallback((
+    sessionId: string,
+    projectPath: string,
+    projectName: string
+  ) => {
+    if (!containerRef.current) return null;
+
+    // 创建容器
+    const terminalContainer = document.createElement('div');
+    terminalContainer.style.width = '100%';
+    terminalContainer.style.height = '100%';
+    containerRef.current.appendChild(terminalContainer);
+
+    // 创建终端
+    const term = new XTerm({
+      cursorBlink: true,
+      fontSize: 14,
+      fontFamily: 'Consolas, Monaco, monospace',
+      theme: getTerminalTheme(theme),
     });
 
-    // 监听错误
-    window.electronAPI.onClaudeError((error: string) => {
-      setSessions((prev) => {
-        if (prev.length > 0) {
-          const activeSession = prev.find((s) => s.sessionId === activeSessionId) || prev[0];
-          activeSession.term.writeln(`\x1b[31m错误: ${error}\x1b[0m`);
-        }
-        return [...prev];
-      });
-      setSessionActive(false);
-    });
-  }, [activeSessionId, setSessionActive]);
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(terminalContainer);
+    fitAddon.fit();
 
-  // 渲染活动会话的终端
-  useEffect(() => {
-    if (!containerRef.current) return;
+    // 显示欢迎信息
+    term.writeln('\x1b[36mClaude Hub Terminal\x1b[0m');
+    term.writeln('');
+    term.writeln(`\x1b[32m项目: ${projectName}\x1b[0m`);
+    term.writeln(`\x1b[90m路径: ${projectPath}\x1b[0m`);
+    term.writeln('');
 
-    const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
-    if (activeSession) {
-      // 终端已经创建，只需要 fit
-      activeSession.fitAddon.fit();
-    }
-  }, [activeSessionId, sessions]);
+    return { term, fitAddon, container: terminalContainer };
+  }, [theme]);
 
-  // 处理窗口大小调整
-  useEffect(() => {
-    const handleResize = () => {
-      const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
-      if (activeSession) {
-        activeSession.fitAddon.fit();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [activeSessionId, sessions]);
-
+  // 启动新会话
   const handleStartSession = async () => {
     if (!currentProject?.path) return;
 
@@ -256,8 +104,8 @@ const Terminal: React.FC = () => {
       (s) => s.projectPath === currentProject.path
     );
     if (existingSession) {
-      // 切换到现有会话
       setActiveSessionId(existingSession.sessionId);
+      showSession(existingSession.sessionId);
       return;
     }
 
@@ -267,32 +115,32 @@ const Terminal: React.FC = () => {
       return;
     }
 
-    // 创建新的终端容器
-    const terminalContainer = document.createElement('div');
-    terminalContainer.style.display = 'none';
-    containerRef.current?.appendChild(terminalContainer);
-
-    const { term, fitAddon } = createTerminal(
-      terminalContainer,
-      theme,
-      currentProject.path
+    // 创建终端
+    const result = createAndShowTerminal(
+      '', // sessionId 稍后更新
+      currentProject.path,
+      currentProject.name
     );
 
-    // 启动 Claude 会话
-    term.writeln('');
+    if (!result) return;
+
+    const { term, fitAddon, container } = result;
+
+    // 显示启动中
     term.writeln('\x1b[33m正在启动 Claude 会话...\x1b[0m');
 
-    const result = await window.electronAPI.startClaudeSession(currentProject.path);
+    // 启动 Claude
+    const startResult = await window.electronAPI.startClaudeSession(currentProject.path);
 
-    if (result.success && result.sessionId) {
-      const sessionId = result.sessionId;
+    if (startResult.success && startResult.sessionId) {
+      const sessionId = startResult.sessionId;
 
-      // 设置终端输入处理
+      // 设置输入处理
       term.onData((data) => {
         window.electronAPI.sendClaudeInput(sessionId, data);
       });
 
-      // 处理快捷键
+      // 快捷键处理
       term.attachCustomKeyEventHandler((e) => {
         if (e.ctrlKey && e.key === 'c') {
           const selection = term.getSelection();
@@ -303,9 +151,7 @@ const Terminal: React.FC = () => {
         }
         if (e.ctrlKey && e.key === 'v') {
           navigator.clipboard.readText().then((text) => {
-            if (text) {
-              term.paste(text);
-            }
+            if (text) term.paste(text);
           });
           return false;
         }
@@ -320,86 +166,213 @@ const Terminal: React.FC = () => {
       const newSession: SessionTerminal = {
         sessionId,
         projectPath: currentProject.path,
+        projectName: currentProject.name,
         term,
         fitAddon,
+        container,
       };
 
       setSessions((prev) => [...prev, newSession]);
       setActiveSessionId(sessionId);
       setSessionActive(true, Date.now());
 
-      term.writeln('\x1b[32mClaude 会话已启动！\x1b[0m');
+      // 显示新会话
+      container.style.display = 'block';
+
+      term.writeln('\x1b[32m✓ Claude 会话已启动\x1b[0m');
       term.writeln('');
     } else {
-      term.writeln(`\x1b[31m启动失败: ${result.error}\x1b[0m`);
+      term.writeln(`\x1b[31m✗ 启动失败: ${startResult.error}\x1b[0m`);
       term.writeln('\x1b[33m请确保已安装 Claude CLI\x1b[0m');
-      // 清理失败的终端
-      term.dispose();
-      terminalContainer.remove();
     }
   };
 
-  const handleKillSession = async (sessionId?: string) => {
-    const targetSessionId = sessionId || activeSessionId;
-    if (!targetSessionId) return;
+  // 关闭会话
+  const handleCloseSession = async (sessionId: string) => {
+    const session = sessions.find((s) => s.sessionId === sessionId);
+    if (!session) return;
 
-    await window.electronAPI.killClaudeSession(targetSessionId);
+    // 杀掉进程
+    await window.electronAPI.killClaudeSession(sessionId);
 
-    // 更新本地状态
-    setSessions((prev) => {
-      const session = prev.find((s) => s.sessionId === targetSessionId);
-      if (session) {
-        session.term.writeln('\x1b[33m会话已终止\x1b[0m');
+    // 清理终端
+    session.term.dispose();
+    session.container.remove();
+
+    // 更新状态
+    const remaining = sessions.filter((s) => s.sessionId !== sessionId);
+    setSessions(remaining);
+
+    if (activeSessionId === sessionId) {
+      if (remaining.length > 0) {
+        const nextSession = remaining[remaining.length - 1];
+        setActiveSessionId(nextSession.sessionId);
+        showSession(nextSession.sessionId);
+      } else {
+        setActiveSessionId(null);
+        setSessionActive(false);
       }
-      return prev.filter((s) => s.sessionId !== targetSessionId);
-    });
-
-    if (targetSessionId === activeSessionId) {
-      setSessionActive(false);
-      // 切换到其他会话
-      const remainingSessions = sessions.filter((s) => s.sessionId !== targetSessionId);
-      setActiveSessionId(remainingSessions.length > 0 ? remainingSessions[0].sessionId : null);
     }
   };
 
+  // 切换会话
   const handleSelectSession = (sessionId: string) => {
     setActiveSessionId(sessionId);
-    // 隐藏其他终端，显示选中的终端
-    sessions.forEach((session) => {
-      const container = session.term.element?.parentElement;
-      if (container) {
-        container.style.display = session.sessionId === sessionId ? 'block' : 'none';
-      }
-    });
-    // Fit 当前终端
-    setTimeout(() => {
+    showSession(sessionId);
+  };
+
+  // 监听输出事件
+  useEffect(() => {
+    window.electronAPI.onClaudeOutput(({ sessionId, data }) => {
       const session = sessions.find((s) => s.sessionId === sessionId);
       if (session) {
-        session.fitAddon.fit();
+        session.term.write(data);
       }
-    }, 10);
-  };
+    });
 
-  const handleCloseSession = async (sessionId: string) => {
-    await handleKillSession(sessionId);
-  };
+    window.electronAPI.onClaudeClose(({ sessionId, exitCode }) => {
+      const session = sessions.find((s) => s.sessionId === sessionId);
+      if (session) {
+        session.term.writeln(`\x1b[33m会话已结束 (退出码: ${exitCode})\x1b[0m`);
+        // 标记为已关闭
+        session.term.options.cursorBlink = false;
+      }
+      if (sessionId === activeSessionId) {
+        setSessionActive(false);
+      }
+    });
 
-  // 获取当前活动会话
-  const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
-  const hasActiveSession = sessions.length > 0 && activeSessionId !== null;
+    window.electronAPI.onClaudeError((error) => {
+      if (sessions.length > 0) {
+        const session = sessions.find((s) => s.sessionId === activeSessionId) || sessions[0];
+        session.term.writeln(`\x1b[31m错误: ${error}\x1b[0m`);
+      }
+      setSessionActive(false);
+    });
+  }, [sessions, activeSessionId, setSessionActive]);
+
+  // 主题变化
+  useEffect(() => {
+    sessions.forEach((session) => {
+      session.term.options.theme = getTerminalTheme(theme);
+    });
+  }, [theme, sessions]);
+
+  // 窗口大小变化
+  useEffect(() => {
+    const handleResize = () => {
+      if (activeSessionId) {
+        const session = sessions.find((s) => s.sessionId === activeSessionId);
+        session?.fitAddon.fit();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeSessionId, sessions]);
+
+  // 初始显示活动会话
+  useEffect(() => {
+    if (activeSessionId) {
+      showSession(activeSessionId);
+    }
+  }, [activeSessionId, showSession]);
+
+  const hasActiveSession = sessions.length > 0;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
       {/* 标签栏 */}
-      <TerminalTabs
-        sessions={sessions}
-        activeSessionId={activeSessionId}
-        onSelectSession={handleSelectSession}
-        onCloseSession={handleCloseSession}
-        theme={theme}
-      />
+      {sessions.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            gap: '2px',
+            padding: '4px 8px',
+            backgroundColor: 'var(--bg-tertiary)',
+            borderBottom: '1px solid var(--border-color)',
+            overflowX: 'auto',
+          }}
+        >
+          {sessions.map((session) => (
+            <div
+              key={session.sessionId}
+              onClick={() => handleSelectSession(session.sessionId)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 12px',
+                backgroundColor:
+                  activeSessionId === session.sessionId
+                    ? 'var(--bg-primary)'
+                    : 'var(--bg-secondary)',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                fontSize: '12px',
+                color:
+                  activeSessionId === session.sessionId
+                    ? 'var(--text-primary)'
+                    : 'var(--text-secondary)',
+                border:
+                  activeSessionId === session.sessionId
+                    ? '1px solid var(--accent-color)'
+                    : '1px solid transparent',
+                transition: 'all 0.15s',
+              }}
+            >
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--success-color)',
+                }}
+              />
+              <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {session.projectName}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCloseSession(session.sessionId);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: '0 2px',
+                  fontSize: '14px',
+                  lineHeight: 1,
+                }}
+                title="关闭会话"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          {sessions.length < 3 && currentProject && (
+            <div
+              onClick={handleStartSession}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '6px 12px',
+                color: 'var(--accent-color)',
+                fontSize: '12px',
+                cursor: 'pointer',
+                borderRadius: 'var(--radius-sm)',
+              }}
+              title="为当前项目启动新会话"
+            >
+              + 新建
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* 终端头部 */}
+      {/* 头部 */}
       <div
         style={{
           padding: '10px 16px',
@@ -408,32 +381,17 @@ const Terminal: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           backgroundColor: 'var(--bg-secondary)',
-          color: 'var(--text-primary)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span
-            style={{
-              fontSize: '13px',
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: hasActiveSession
-                  ? 'var(--success-color)'
-                  : 'var(--text-muted)',
-              }}
-            />
-            终端 {activeSession ? `(${sessions.length})` : ''}
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+            终端 {sessions.length > 0 && `(${sessions.length})`}
           </span>
+          {currentProject && (
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              当前: {currentProject.name}
+            </span>
+          )}
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
             Ctrl+C 复制 | Ctrl+V 粘贴 | Ctrl+L 清屏
           </span>
@@ -443,35 +401,32 @@ const Terminal: React.FC = () => {
             onClick={handleStartSession}
             disabled={!currentProject?.path}
             style={{
-              padding: '5px 14px',
-              backgroundColor: currentProject?.path
-                ? 'var(--accent-color)'
-                : 'var(--bg-tertiary)',
+              padding: '6px 16px',
+              backgroundColor: currentProject?.path ? 'var(--accent-color)' : 'var(--bg-tertiary)',
               color: currentProject?.path ? 'white' : 'var(--text-muted)',
               border: 'none',
               borderRadius: 'var(--radius-md)',
               cursor: currentProject?.path ? 'pointer' : 'not-allowed',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 500,
-              transition: 'all 0.15s ease',
             }}
           >
             启动 Claude
           </button>
         ) : (
           <button
-            onClick={() => handleKillSession()}
+            onClick={() => activeSessionId && handleCloseSession(activeSessionId)}
             style={{
-              padding: '5px 14px',
+              padding: '6px 16px',
               backgroundColor: 'var(--danger-color)',
               color: 'white',
               border: 'none',
               borderRadius: 'var(--radius-md)',
               cursor: 'pointer',
-              fontSize: '12px',
+              fontSize: '13px',
             }}
           >
-            停止会话
+            停止
           </button>
         )}
       </div>
@@ -481,7 +436,7 @@ const Terminal: React.FC = () => {
         ref={containerRef}
         style={{
           flex: 1,
-          backgroundColor: 'var(--terminal-bg, #1e1e1e)',
+          backgroundColor: 'var(--terminal-bg)',
           padding: '8px',
           position: 'relative',
         }}
@@ -495,29 +450,28 @@ const Terminal: React.FC = () => {
               transform: 'translate(-50%, -50%)',
               color: 'var(--text-muted)',
               textAlign: 'center',
-              fontSize: '14px',
             }}
           >
-            <div style={{ marginBottom: '8px' }}>暂无活动的 Claude 会话</div>
-            {currentProject?.path ? (
-              <div>
-                <button
-                  onClick={handleStartSession}
-                  style={{
-                    padding: '8px 20px',
-                    backgroundColor: 'var(--accent-color)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: 'var(--radius-md)',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                  }}
-                >
-                  启动 Claude 会话
-                </button>
-              </div>
-            ) : (
-              <div style={{ fontSize: '12px' }}>请先选择一个项目</div>
+            <div style={{ marginBottom: '16px', fontSize: '14px' }}>
+              {currentProject
+                ? '点击「启动 Claude」开始对话'
+                : '请先选择一个项目'}
+            </div>
+            {currentProject?.path && (
+              <button
+                onClick={handleStartSession}
+                style={{
+                  padding: '10px 24px',
+                  backgroundColor: 'var(--accent-color)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                启动 Claude 会话
+              </button>
             )}
           </div>
         )}
