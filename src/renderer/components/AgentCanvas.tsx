@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Agent } from '@shared/types';
 
 interface AgentCanvasProps {
@@ -34,13 +34,32 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
 }) => {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [editingRules, setEditingRules] = useState('');
+  const [editingSystemPrompt, setEditingSystemPrompt] = useState('');
+
+  const selectedAgent = agents.find((a) => a.id === selectedAgentId);
+
+  // Sync local state when selectedAgent changes
+  useEffect(() => {
+    if (selectedAgent) {
+      setEditingRules(selectedAgent.rules || '');
+      setEditingSystemPrompt(selectedAgent.systemPrompt || '');
+    }
+  }, [selectedAgentId, selectedAgent]);
 
   const handleAgentClick = (agentId: string) => {
     setSelectedAgentId(agentId);
     onSelectAgent(agentId);
   };
 
-  const selectedAgent = agents.find((a) => a.id === selectedAgentId);
+  const handleSave = () => {
+    if (selectedAgentId) {
+      onUpdateAgent(selectedAgentId, {
+        rules: editingRules,
+        systemPrompt: editingSystemPrompt,
+      });
+    }
+  };
 
   return (
     <div
@@ -306,21 +325,77 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
                         letterSpacing: '0.5px',
                       }}
                     >
-                      规则
+                      规则 (rules)
                     </div>
-                    <div
+                    <textarea
+                      value={editingRules}
+                      onChange={(e) => setEditingRules(e.target.value)}
+                      placeholder="输入 Agent 规则..."
                       style={{
-                        color: 'var(--text-secondary)',
+                        width: '100%',
+                        minHeight: '60px',
+                        padding: '8px',
                         fontSize: '11px',
                         lineHeight: 1.5,
+                        color: 'var(--text-primary)',
+                        backgroundColor: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        resize: 'vertical',
+                        fontFamily: 'inherit',
                       }}
-                    >
-                      {selectedAgent.rules}
-                    </div>
+                    />
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                {/* System Prompt Editable */}
+                <div>
+                  <div
+                    style={{
+                      color: 'var(--text-muted)',
+                      marginBottom: '4px',
+                      fontSize: '10px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    系统提示词 (systemPrompt)
+                  </div>
+                  <textarea
+                    value={editingSystemPrompt}
+                    onChange={(e) => setEditingSystemPrompt(e.target.value)}
+                    placeholder="输入系统提示词..."
+                    style={{
+                      width: '100%',
+                      minHeight: '80px',
+                      padding: '8px',
+                      fontSize: '11px',
+                      lineHeight: 1.5,
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--bg-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '4px',
+                      resize: 'vertical',
+                      fontFamily: 'inherit',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={handleSave}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '11px',
+                      backgroundColor: 'var(--accent-color)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    保存配置
+                  </button>
                   {selectedAgent.status !== 'active' ? (
                     <button
                       onClick={() =>
