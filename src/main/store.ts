@@ -45,6 +45,17 @@ export function removeProject(id: string): void {
   }
 }
 
+// Update project (for tags, favorites, etc.)
+export function updateProject(id: string, updates: Partial<Project>): Project | null {
+  const projects = getProjects();
+  const index = projects.findIndex((p) => p.id === id);
+  if (index === -1) return null;
+
+  projects[index] = { ...projects[index], ...updates };
+  store.set('projects', projects);
+  return projects[index];
+}
+
 export function setCurrentProject(id: string): void {
   store.set('currentProjectId', id);
 }

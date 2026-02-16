@@ -145,6 +145,28 @@ function App() {
     }
   };
 
+  // 更新项目（收藏、标签等）
+  const handleUpdateProject = async (id: string, updates: Partial<Project>) => {
+    try {
+      const updatedProject = await window.electronAPI.updateProject(id, updates);
+      if (updatedProject && 'error' in updatedProject) {
+        setError(getFriendlyError(updatedProject.error));
+        return;
+      }
+      // 更新项目列表和当前项目
+      const updatedProjects = projects.map(p =>
+        p.id === id ? { ...p, ...updates } : p
+      );
+      setProjects(updatedProjects);
+      if (currentProject?.id === id) {
+        setCurrentProject(updatedProject as Project);
+      }
+    } catch (err) {
+      console.error('更新项目失败:', err);
+      setError(handleError(err, '更新项目失败'));
+    }
+  };
+
   const handleAgentStatusChange = async (agentId: string, status: Agent['status']) => {
     if (!currentProject) return;
     try {
@@ -253,6 +275,7 @@ function App() {
           onSelectProject={handleSelectProject}
           onAddProject={handleAddProject}
           onRemoveProject={handleRemoveProject}
+          onUpdateProject={handleUpdateProject}
           isAddingProject={isAddingProject}
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>

@@ -1,3 +1,6 @@
+// 标签颜色
+export type TagColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple';
+
 export interface Project {
   id: string;
   name: string;
@@ -5,6 +8,9 @@ export interface Project {
   agents: Agent[];
   createdAt: string;
   lastOpened: string;
+  // 新增：收藏和标签
+  isFavorite?: boolean;
+  tags?: TagColor[];
 }
 
 export interface Agent {

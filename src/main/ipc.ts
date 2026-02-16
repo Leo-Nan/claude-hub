@@ -113,6 +113,14 @@ export function setupIPC() {
     return store.getProjects();
   });
 
+  // Update project
+  ipcMain.handle('update-project', (_event, id: string, updates: Record<string, unknown>) => {
+    if (!isValidId(id)) {
+      return { error: '无效的项目ID' };
+    }
+    return store.updateProject(id, updates);
+  });
+
   // Set current project
   ipcMain.handle('set-current-project', (_event, id: string) => {
     if (!isValidId(id)) {

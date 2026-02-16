@@ -1,5 +1,5 @@
 // File tree types
-import { Project, Agent } from '@shared/types';
+import { Project, Agent, TagColor } from '@shared/types';
 
 interface FileNode {
   name: string;
@@ -17,6 +17,7 @@ interface ElectronAPI {
   getProjects: () => Promise<Project[]>;
   addProject: () => Promise<Project | null>;
   removeProject: (id: string) => Promise<Project[]>;
+  updateProject: (id: string, updates: Partial<Project>) => Promise<Project | null>;
   setCurrentProject: (id: string) => Promise<Project | null>;
   getCurrentProject: () => Promise<Project | null>;
   updateAgentStatus: (projectId: string, agentId: string, status: string) => Promise<Project | null>;

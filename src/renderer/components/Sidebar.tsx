@@ -1,8 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Project } from '@shared/types';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Project, TagColor } from '@shared/types';
 import Modal from './Modal';
 import FileTree from './FileTree';
 import { Button, Input, EmptyState, Badge } from './ui';
+
+// 标签颜色配置
+const TAG_COLORS: Record<TagColor, string> = {
+  red: '#ef4444',
+  orange: '#f97316',
+  yellow: '#eab308',
+  green: '#22c55e',
+  blue: '#3b82f6',
+  purple: '#a855f7',
+};
+
+const TAG_LABELS: Record<TagColor, string> = {
+  red: '工作',
+  orange: '紧急',
+  yellow: '学习',
+  green: '个人',
+  blue: '项目',
+  purple: '其他',
+};
 
 // 文件节点类型
 interface FileNode {
@@ -11,12 +30,16 @@ interface FileNode {
   isDirectory: boolean;
 }
 
+// 更新项目的回调
+type UpdateProjectCallback = (projectId: string, updates: Partial<Project>) => void;
+
 interface SidebarProps {
   projects: Project[];
   currentProjectId: string | null;
   onSelectProject: (id: string) => void;
   onAddProject: () => void;
   onRemoveProject: (id: string) => void;
+  onUpdateProject?: UpdateProjectCallback;
   isAddingProject?: boolean;
 }
 
@@ -53,6 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onSelectProject,
   onAddProject,
   onRemoveProject,
+  onUpdateProject,
   isAddingProject = false,
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -61,18 +85,57 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; project: Project } | null>(null);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  const [selectedTag, setSelectedTag] = useState<TagColor | null>(null);
+  const [showFavorites, setShowFavorites] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   // 当前选中的项目
   const currentProject = projects.find(p => p.id === currentProjectId);
 
-  // Filter projects by search query
-  const filteredProjects = searchQuery
-    ? projects.filter(p =>
+  // 获取所有标签
+  const allTags = useMemo(() => {
+    const tags = new Set<TagColor>();
+    projects.forEach(p => p.tags?.forEach(t => tags.add(t)));
+    return Array.from(tags);
+  }, [projects]);
+
+  // Filter and sort projects
+  const filteredProjects = useMemo(() => {
+    let result = [...projects];
+
+    // 搜索过滤
+    if (searchQuery) {
+      result = result.filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.path.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : projects;
+      );
+    }
+
+    // 收藏过滤
+    if (showFavorites) {
+      result = result.filter(p => p.isFavorite);
+    }
+
+    // 标签过滤
+    if (selectedTag) {
+      result = result.filter(p => p.tags?.includes(selectedTag));
+    }
+
+    // 排序：收藏优先，然后按最近打开
+    result.sort((a, b) => {
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      return new Date(b.lastOpened).getTime() - new Date(a.lastOpened).getTime();
+    });
+
+    return result;
+  }, [projects, searchQuery, showFavorites, selectedTag]);
+
+  // 收藏的项目
+  const favoriteProjects = useMemo(() =>
+    projects.filter(p => p.isFavorite),
+    [projects]
+  );
 
   // Sync selected index with current project
   useEffect(() => {
@@ -170,6 +233,28 @@ const Sidebar: React.FC<SidebarProps> = ({
     setContextMenu(null);
   };
 
+  // 切换收藏
+  const handleToggleFavorite = () => {
+    if (contextMenu?.project && onUpdateProject) {
+      onUpdateProject(contextMenu.project.id, {
+        isFavorite: !contextMenu.project.isFavorite
+      });
+    }
+    setContextMenu(null);
+  };
+
+  // 添加/移除标签
+  const handleToggleTag = (tag: TagColor) => {
+    if (contextMenu?.project && onUpdateProject) {
+      const currentTags = contextMenu.project.tags || [];
+      const newTags = currentTags.includes(tag)
+        ? currentTags.filter(t => t !== tag)
+        : [...currentTags, tag];
+      onUpdateProject(contextMenu.project.id, { tags: newTags });
+    }
+    setContextMenu(null);
+  };
+
   // 切换项目文件树展开
   const toggleProjectFiles = (projectId: string) => {
     setExpandedProjects(prev => {
@@ -229,6 +314,25 @@ const Sidebar: React.FC<SidebarProps> = ({
           <MenuItem icon="💻" label="在 VSCode 中打开" onClick={handleOpenInVSCode} />
           <MenuItem icon="📋" label="复制路径" onClick={handleCopyPath} />
           <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
+
+          {/* 收藏选项 */}
+          <MenuItem
+            icon={contextMenu?.project?.isFavorite ? '⭐' : '☆'}
+            label={contextMenu?.project?.isFavorite ? '取消收藏' : '收藏项目'}
+            onClick={handleToggleFavorite}
+          />
+
+          {/* 标签选项 */}
+          {(Object.keys(TAG_COLORS) as TagColor[]).map(tag => (
+            <MenuItem
+              key={tag}
+              icon={contextMenu?.project?.tags?.includes(tag) ? '●' : '○'}
+              label={TAG_LABELS[tag]}
+              onClick={() => handleToggleTag(tag)}
+            />
+          ))}
+
+          <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
           <MenuItem icon="🗑️" label="删除项目" onClick={handleDelete} danger />
         </div>
       )}
@@ -271,6 +375,65 @@ const Sidebar: React.FC<SidebarProps> = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             icon="🔍"
           />
+
+          {/* 标签筛选 */}
+          <div style={{
+            display: 'flex',
+            gap: '6px',
+            padding: '8px 0',
+            flexWrap: 'wrap',
+          }}>
+            {/* 全部 */}
+            <button
+              onClick={() => { setShowFavorites(false); setSelectedTag(null); }}
+              style={{
+                padding: '4px 8px',
+                fontSize: '11px',
+                borderRadius: '12px',
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: !showFavorites && !selectedTag ? 'var(--accent-color)' : 'var(--bg-tertiary)',
+                color: !showFavorites && !selectedTag ? 'white' : 'var(--text-secondary)',
+              }}
+            >
+              全部
+            </button>
+
+            {/* 收藏 */}
+            <button
+              onClick={() => { setShowFavorites(!showFavorites); setSelectedTag(null); }}
+              style={{
+                padding: '4px 8px',
+                fontSize: '11px',
+                borderRadius: '12px',
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: showFavorites ? '#eab308' : 'var(--bg-tertiary)',
+                color: showFavorites ? 'black' : 'var(--text-secondary)',
+              }}
+            >
+              ⭐ 收藏 ({favoriteProjects.length})
+            </button>
+
+            {/* 标签按钮 */}
+            {allTags.map(tag => (
+              <button
+                key={tag}
+                onClick={() => { setSelectedTag(selectedTag === tag ? null : tag); setShowFavorites(false); }}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: selectedTag === tag ? TAG_COLORS[tag] : 'var(--bg-tertiary)',
+                  color: selectedTag === tag ? 'white' : 'var(--text-secondary)',
+                }}
+              >
+                {TAG_LABELS[tag]}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 项目列表 */}
@@ -318,9 +481,30 @@ const Sidebar: React.FC<SidebarProps> = ({
                     alignItems: 'center',
                     gap: '8px',
                   }}>
+                    {/* 收藏图标 */}
+                    {project.isFavorite && (
+                      <span style={{ color: '#eab308', fontSize: '12px' }}>⭐</span>
+                    )}
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {project.name}
                     </span>
+                    {/* 标签显示 */}
+                    {project.tags && project.tags.length > 0 && (
+                      <div style={{ display: 'flex', gap: '3px' }}>
+                        {project.tags.map(tag => (
+                          <span
+                            key={tag}
+                            style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: TAG_COLORS[tag],
+                            }}
+                            title={TAG_LABELS[tag]}
+                          />
+                        ))}
+                      </div>
+                    )}
                     {project.agents && project.agents.length > 0 && (
                       <Badge color="var(--accent-color)" variant="outline">
                         {project.agents.length}

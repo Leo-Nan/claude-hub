@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getProjects: () => ipcRenderer.invoke('get-projects'),
   addProject: () => ipcRenderer.invoke('add-project'),
   removeProject: (id: string) => ipcRenderer.invoke('remove-project', id),
+  updateProject: (id: string, updates: Record<string, unknown>) => ipcRenderer.invoke('update-project', id, updates),
   setCurrentProject: (id: string) => ipcRenderer.invoke('set-current-project', id),
   getCurrentProject: () => ipcRenderer.invoke('get-current-project'),
   updateAgentStatus: (projectId: string, agentId: string, status: string) =>
