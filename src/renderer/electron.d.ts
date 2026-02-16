@@ -1,3 +1,11 @@
+// File tree types
+interface FileNode {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  children?: FileNode[];
+}
+
 interface SessionInfo {
   id: string;
   projectPath: string;
@@ -15,6 +23,12 @@ interface ElectronAPI {
   getTheme: () => Promise<string>;
   setTheme: (theme: 'light' | 'dark') => Promise<void>;
   getVersion: () => Promise<string>;
+
+  // File tree management
+  getProjectFiles: (projectPath: string) => Promise<FileNode[]>;
+  openInExplorer: (filePath: string) => Promise<{ success: boolean }>;
+  openInVSCode: (filePath: string) => Promise<{ success: boolean }>;
+  copyPath: (filePath: string) => Promise<{ success: boolean }>;
 
   // Claude session management (multi-session support)
   startClaudeSession: (projectPath: string) => Promise<{ success: boolean; sessionId?: string; error?: string }>;

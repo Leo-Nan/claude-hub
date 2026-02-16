@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Project } from '@shared/types';
 import Modal from './Modal';
+import FileTree from './FileTree';
 import { Button, Input, EmptyState, Badge } from './ui';
+
+// 文件节点类型
+interface FileNode {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+}
 
 interface SidebarProps {
   projects: Project[];
@@ -11,6 +19,33 @@ interface SidebarProps {
   onRemoveProject: (id: string) => void;
   isAddingProject?: boolean;
 }
+
+// 项目菜单选项
+const MenuItem: React.FC<{
+  icon: string;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}> = ({ icon, label, onClick, danger }) => (
+  <div
+    onClick={onClick}
+    style={{
+      padding: '8px 12px',
+      cursor: 'pointer',
+      fontSize: '13px',
+      color: danger ? 'var(--danger-color)' : 'var(--text-primary)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      transition: 'background-color 0.1s',
+    }}
+    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+  >
+    <span>{icon}</span>
+    <span>{label}</span>
+  </div>
+);
 
 const Sidebar: React.FC<SidebarProps> = ({
   projects,
@@ -24,7 +59,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; project: Project } | null>(null);
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
+
+  // 当前选中的项目
+  const currentProject = projects.find(p => p.id === currentProjectId);
 
   // Filter projects by search query
   const filteredProjects = searchQuery
@@ -34,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       )
     : projects;
 
-  // Sync selected index with current project (using filtered list)
+  // Sync selected index with current project
   useEffect(() => {
     if (currentProjectId && filteredProjects.length > 0) {
       const index = filteredProjects.findIndex(p => p.id === currentProjectId);
@@ -44,10 +84,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [currentProjectId, filteredProjects]);
 
-  // Handle keyboard navigation (using filtered projects)
+  // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (modalOpen) return;
+      if (modalOpen || contextMenu) return;
 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -73,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedIndex, projects, modalOpen, onSelectProject, onAddProject]);
+  }, [selectedIndex, projects, modalOpen, contextMenu, onSelectProject, onAddProject]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -85,10 +125,62 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [selectedIndex]);
 
-  const handleContextMenu = (e: React.MouseEvent, id: string) => {
+  // 点击外部关闭菜单
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    if (contextMenu) {
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu]);
+
+  // 右键菜单处理
+  const handleContextMenu = (e: React.MouseEvent, project: Project) => {
     e.preventDefault();
-    setProjectToDelete(id);
-    setModalOpen(true);
+    setContextMenu({ x: e.clientX, y: e.clientY, project });
+  };
+
+  // 菜单操作
+  const handleOpenInExplorer = () => {
+    if (contextMenu?.project) {
+      window.electronAPI.openInExplorer(contextMenu.project.path);
+    }
+    setContextMenu(null);
+  };
+
+  const handleOpenInVSCode = () => {
+    if (contextMenu?.project) {
+      window.electronAPI.openInVSCode(contextMenu.project.path);
+    }
+    setContextMenu(null);
+  };
+
+  const handleCopyPath = () => {
+    if (contextMenu?.project) {
+      window.electronAPI.copyPath(contextMenu.project.path);
+    }
+    setContextMenu(null);
+  };
+
+  const handleDelete = () => {
+    if (contextMenu?.project) {
+      setProjectToDelete(contextMenu.project.id);
+      setModalOpen(true);
+    }
+    setContextMenu(null);
+  };
+
+  // 切换项目文件树展开
+  const toggleProjectFiles = (projectId: string) => {
+    setExpandedProjects(prev => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
+      }
+      return next;
+    });
   };
 
   const handleConfirmDelete = () => {
@@ -116,9 +208,34 @@ const Sidebar: React.FC<SidebarProps> = ({
         onCancel={handleCancelDelete}
         danger
       />
+
+      {/* 右键菜单 */}
+      {contextMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            top: contextMenu.y,
+            left: contextMenu.x,
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: 1000,
+            minWidth: '160px',
+            padding: '4px 0',
+          }}
+        >
+          <MenuItem icon="📂" label="在文件夹中显示" onClick={handleOpenInExplorer} />
+          <MenuItem icon="💻" label="在 VSCode 中打开" onClick={handleOpenInVSCode} />
+          <MenuItem icon="📋" label="复制路径" onClick={handleCopyPath} />
+          <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
+          <MenuItem icon="🗑️" label="删除项目" onClick={handleDelete} danger />
+        </div>
+      )}
+
       <div
         style={{
-          width: 240,
+          width: 280,
           height: '100%',
           borderRight: '1px solid var(--border-color)',
           display: 'flex',
@@ -141,8 +258,12 @@ const Sidebar: React.FC<SidebarProps> = ({
             letterSpacing: '0.5px',
             color: 'var(--text-muted)',
             marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}>
-            项目
+            <span>项目</span>
+            <span style={{ fontWeight: 400, opacity: 0.7 }}>{projects.length}</span>
           </div>
           <Input
             placeholder="搜索项目..."
@@ -162,85 +283,83 @@ const Sidebar: React.FC<SidebarProps> = ({
             />
           ) : (
             filteredProjects.map((project, index) => (
-              <div
-                key={project.id}
-                data-project-item
-                onClick={() => onSelectProject(project.id)}
-                onContextMenu={(e) => handleContextMenu(e, project.id)}
-                style={{
-                  padding: '10px 12px',
-                  cursor: 'pointer',
-                  backgroundColor:
-                    project.id === currentProjectId
-                      ? 'var(--hover-bg)'
-                      : selectedIndex === index
-                        ? 'var(--bg-primary)'
-                        : 'transparent',
-                  borderLeft:
-                    project.id === currentProjectId
-                      ? '3px solid var(--accent-color)'
-                      : selectedIndex === index
-                        ? '3px solid var(--success-color)'
-                        : '3px solid transparent',
-                  transition: 'background-color 0.1s',
-                  marginBottom: '2px',
-                }}
-              >
-                <div style={{
-                  fontSize: '13px',
-                  fontWeight: project.id === currentProjectId ? 500 : 400,
-                  color: 'var(--text-primary)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}>
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {project.name}
-                  </span>
-                  {project.agents && project.agents.length > 0 && (
-                    <Badge color="var(--accent-color)" variant="outline">
-                      {project.agents.length}
-                    </Badge>
-                  )}
-                </div>
-                <div style={{
-                  fontSize: '11px',
-                  color: 'var(--text-muted)',
-                  marginTop: '4px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {project.path}
-                </div>
-                {/* 删除按钮 - 悬停时显示 */}
+              <div key={project.id}>
                 <div
-                  className="delete-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleContextMenu(e, project.id);
-                  }}
+                  data-project-item
+                  onClick={() => onSelectProject(project.id)}
+                  onContextMenu={(e) => handleContextMenu(e, project)}
                   style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    opacity: 0,
-                    transition: 'opacity 0.15s',
-                    background: 'var(--danger-color)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '4px 8px',
-                    fontSize: '12px',
+                    padding: '10px 12px',
                     cursor: 'pointer',
+                    backgroundColor:
+                      project.id === currentProjectId
+                        ? 'var(--hover-bg)'
+                        : selectedIndex === index
+                          ? 'var(--bg-primary)'
+                          : 'transparent',
+                    borderLeft:
+                      project.id === currentProjectId
+                        ? '3px solid var(--accent-color)'
+                        : selectedIndex === index
+                          ? '3px solid var(--success-color)'
+                          : '3px solid transparent',
+                    transition: 'background-color 0.1s',
+                    marginBottom: '2px',
                   }}
                 >
-                  删除
+                  <div style={{
+                    fontSize: '13px',
+                    fontWeight: project.id === currentProjectId ? 500 : 400,
+                    color: 'var(--text-primary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {project.name}
+                    </span>
+                    {project.agents && project.agents.length > 0 && (
+                      <Badge color="var(--accent-color)" variant="outline">
+                        {project.agents.length}
+                      </Badge>
+                    )}
+                  </div>
+                  <div style={{
+                    fontSize: '11px',
+                    color: 'var(--text-muted)',
+                    marginTop: '4px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {project.path}
+                  </div>
                 </div>
+
+                {/* 当前项目的文件树 */}
+                {project.id === currentProjectId && expandedProjects.has(project.id) && (
+                  <div style={{
+                    padding: '4px 0',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderTop: '1px solid var(--border-light)',
+                    maxHeight: '250px',
+                    overflow: 'auto',
+                  }}>
+                    <FileTree
+                      projectPath={project.path}
+                      onContextMenu={(node) => {
+                        if (node.isDirectory) {
+                          window.electronAPI.openInExplorer(node.path);
+                        } else {
+                          window.electronAPI.openInVSCode(node.path);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -277,12 +396,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
       </div>
-
-      <style>{`
-        [data-project-item]:hover .delete-btn {
-          opacity: 1 !important;
-        }
-      `}</style>
     </>
   );
 };

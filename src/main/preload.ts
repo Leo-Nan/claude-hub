@@ -14,6 +14,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setTheme: (theme: 'light' | 'dark') => ipcRenderer.invoke('set-theme', theme),
   getVersion: () => ipcRenderer.invoke('get-version'),
 
+  // File tree management
+  getProjectFiles: (projectPath: string) => ipcRenderer.invoke('get-project-files', projectPath),
+  openInExplorer: (filePath: string) => ipcRenderer.invoke('open-in-explorer', filePath),
+  openInVSCode: (filePath: string) => ipcRenderer.invoke('open-in-vscode', filePath),
+  copyPath: (filePath: string) => ipcRenderer.invoke('copy-path', filePath),
+
   // Claude session management (multi-session support)
   startClaudeSession: (projectPath: string) => ipcRenderer.invoke('start-claude-session', projectPath),
   sendClaudeInput: (sessionId: string, input: string) => ipcRenderer.invoke('send-claude-input', sessionId, input),
