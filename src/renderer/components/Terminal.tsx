@@ -69,19 +69,22 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
   brightWhite: theme === 'dark' ? '#f0f6fc' : '#ffffff',
 });
 
-  // 显示指定的会话终端
+  // 显示指定的会话终端 - 使用 ref 避免不必要重建
+  const sessionsRef = useRef(sessions);
+  sessionsRef.current = sessions;
+
   const showSession = useCallback((sessionId: string) => {
-    sessions.forEach((session) => {
+    sessionsRef.current.forEach((session) => {
       session.container.style.display = session.sessionId === sessionId ? 'block' : 'none';
     });
     // 延迟 fit 以等待 DOM 更新
     setTimeout(() => {
-      const session = sessions.find((s) => s.sessionId === sessionId);
+      const session = sessionsRef.current.find((s) => s.sessionId === sessionId);
       if (session) {
         session.fitAddon.fit();
       }
     }, 50);
-  }, [sessions]);
+  }, []);
 
   // 创建终端并显示
   const createAndShowTerminal = useCallback((
@@ -243,55 +246,67 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
     showSession(sessionId);
   };
 
-  // 监听输出事件
+  // 监听输出事件 - 使用已有的 ref
   useEffect(() => {
-    window.electronAPI.onClaudeOutput(({ sessionId, data }) => {
-      const session = sessions.find((s) => s.sessionId === sessionId);
+    const handleOutput = ({ sessionId, data }: { sessionId: string; data: string }) => {
+      const session = sessionsRef.current.find((s) => s.sessionId === sessionId);
       if (session) {
         session.term.write(data);
       }
-    });
+    };
 
-    window.electronAPI.onClaudeClose(({ sessionId, exitCode }) => {
-      const session = sessions.find((s) => s.sessionId === sessionId);
+    const handleClose = ({ sessionId, exitCode }: { sessionId: string; exitCode: number }) => {
+      const session = sessionsRef.current.find((s) => s.sessionId === sessionId);
       if (session) {
         session.term.writeln(`\x1b[33m─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─\x1b[0m`);
         session.term.writeln(`\x1b[33m会话已结束 (退出码: ${exitCode})\x1b[0m`);
-        // 标记为已关闭
         session.term.options.cursorBlink = false;
       }
-      if (sessionId === activeSessionId) {
+      if (sessionId === activeSessionIdRef.current) {
         setSessionActive(false);
       }
-    });
+    };
 
-    window.electronAPI.onClaudeError((error) => {
-      if (sessions.length > 0) {
-        const session = sessions.find((s) => s.sessionId === activeSessionId) || sessions[0];
-        session.term.writeln(`\x1b[31m错误: ${error}\x1b[0m`);
+    const handleError = (error: string) => {
+      if (sessionsRef.current.length > 0) {
+        const session = sessionsRef.current.find((s) => s.sessionId === activeSessionIdRef.current) || sessionsRef.current[0];
+        if (session) {
+          session.term.writeln(`\x1b[31m错误: ${error}\x1b[0m`);
+        }
       }
       setSessionActive(false);
-    });
-  }, [sessions, activeSessionId, setSessionActive]);
+    };
 
-  // 主题变化
+    window.electronAPI.onClaudeOutput(handleOutput);
+    window.electronAPI.onClaudeClose(handleClose);
+    window.electronAPI.onClaudeError(handleError);
+
+    return () => {
+      // 清理监听器 - 通过重新绑定空函数来"取消"监听
+      window.electronAPI.onClaudeOutput(() => {});
+      window.electronAPI.onClaudeClose(() => {});
+      window.electronAPI.onClaudeError(() => {});
+    };
+  }, [setSessionActive]);
+
+  // 主题变化 - 使用 ref 避免依赖 sessions
   useEffect(() => {
-    sessions.forEach((session) => {
+    sessionsRef.current.forEach((session) => {
       session.term.options.theme = getTerminalTheme(theme);
     });
-  }, [theme, sessions]);
+  }, [theme]);
 
-  // 窗口大小变化
+  // 窗口大小变化 - 使用已有 ref 避免闭包问题
   useEffect(() => {
     const handleResize = () => {
-      if (activeSessionId) {
-        const session = sessions.find((s) => s.sessionId === activeSessionId);
+      if (activeSessionIdRef.current) {
+        const session = sessionsRef.current.find((s) => s.sessionId === activeSessionIdRef.current);
         session?.fitAddon.fit();
       }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [activeSessionId, sessions]);
+  }, []);
 
   // 初始显示活动会话
   useEffect(() => {
@@ -786,17 +801,8 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
             .map((pane, idx) => pane.sessionId === session.sessionId ? idx : -1)
             .filter(idx => idx >= 0);
 
-          // 如果分屏模式不是 single 且没有分配到任何分屏，则不显示
+          // 如果分屏模式不是 single 且没有分配到任何分屏，则跳过
           if (splitMode !== 'single' && paneIndices.length === 0) {
-            // 检查是否有空的分屏
-            const hasEmptyPane = splitPanes.some(p => p.sessionId === null);
-            if (hasEmptyPane) {
-              // 自动分配到第一个空分屏
-              const firstEmptyIdx = splitPanes.findIndex(p => p.sessionId === null);
-              const newPanes = [...splitPanes];
-              newPanes[firstEmptyIdx] = { ...newPanes[firstEmptyIdx], sessionId: session.sessionId };
-              setSplitPanes(newPanes);
-            }
             return null;
           }
 
@@ -868,12 +874,6 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
                   </select>
                 </div>
               )}
-              <div
-                style={{
-                  flex: 1,
-                  display: splitMode === 'single' ? (isActive ? 'block' : 'none') : 'block',
-                }}
-              />
             </div>
           );
         })}
