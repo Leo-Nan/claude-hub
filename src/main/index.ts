@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, globalShortcut } from 'electron';
 import * as path from 'path';
 import { setupIPC } from './ipc';
 import { setupClaudeCleanup, cleanupAllSessions } from './claude';
@@ -6,6 +6,37 @@ import { setupClaudeCleanup, cleanupAllSessions } from './claude';
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+
+// Register global shortcuts
+function registerGlobalShortcuts() {
+  // Show/hide window: Ctrl+Shift+C
+  globalShortcut.register('CommandOrControl+Shift+C', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible() && mainWindow.isFocused()) {
+        mainWindow.hide();
+      } else {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    }
+  });
+
+  // New session: Ctrl+Shift+N
+  globalShortcut.register('CommandOrControl+Shift+N', () => {
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+      mainWindow.webContents.send('shortcut', 'new-session');
+    }
+  });
+
+  // Toggle theme: Ctrl+Shift+T
+  globalShortcut.register('CommandOrControl+Shift+T', () => {
+    if (mainWindow) {
+      mainWindow.webContents.send('shortcut', 'toggle-theme');
+    }
+  });
+}
 
 // Create system tray
 function createTray() {
@@ -108,6 +139,7 @@ app.whenReady().then(() => {
   setupIPC();
   createWindow();
   createTray();
+  registerGlobalShortcuts();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -125,5 +157,6 @@ app.on('window-all-closed', () => {
 // Cleanup before quit
 app.on('before-quit', () => {
   isQuitting = true;
+  globalShortcut.unregisterAll();
   cleanupAllSessions();
 });
