@@ -15,6 +15,32 @@ interface SessionTerminal {
   container: HTMLDivElement;
 }
 
+// 分屏模式类型
+type SplitMode = 'single' | 'left-right' | 'top-bottom' | 'grid' | 'layout-1-2';
+
+// 分屏配置
+interface SplitPane {
+  sessionId: string | null;
+  flex?: number;
+}
+
+// 分屏模板配置
+const SPLIT_TEMPLATES: Record<SplitMode, SplitPane[]> = {
+  'single': [{ sessionId: null }],
+  'left-right': [{ sessionId: null }, { sessionId: null }],
+  'top-bottom': [{ sessionId: null }, { sessionId: null }],
+  'grid': [{ sessionId: null }, { sessionId: null }, { sessionId: null }, { sessionId: null }],
+  'layout-1-2': [{ sessionId: null, flex: 2 }, { sessionId: null, flex: 1 }],
+};
+
+const Terminal: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [sessions, setSessions] = useState<SessionTerminal[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [splitMode, setSplitMode] = useState<SplitMode>('single');
+  const [splitPanes, setSplitPanes] = useState<SplitPane[]>([{ sessionId: null }]);
+  const { theme, setSessionActive, currentProject } = useAppStore();
+
 // 主题颜色配置
 const getTerminalTheme = (theme: 'light' | 'dark') => ({
   background: theme === 'dark' ? '#0d1117' : '#1e1e1e',
@@ -38,12 +64,6 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
   brightCyan: theme === 'dark' ? '#56d4dd' : '#29b8db',
   brightWhite: theme === 'dark' ? '#f0f6fc' : '#ffffff',
 });
-
-const Terminal: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [sessions, setSessions] = useState<SessionTerminal[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const { theme, setSessionActive, currentProject } = useAppStore();
 
   // 显示指定的会话终端
   const showSession = useCallback((sessionId: string) => {
@@ -326,6 +346,30 @@ const Terminal: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeSessionId, sessions, handleStartSession, handleCloseSession, handleSelectSession]);
 
+  // 切换分屏模式
+  const handleSplitModeChange = useCallback((mode: SplitMode) => {
+    setSplitMode(mode);
+    setSplitPanes(SPLIT_TEMPLATES[mode].map((pane, index) => ({
+      ...pane,
+      sessionId: sessions[index]?.sessionId || null,
+    })));
+  }, [sessions]);
+
+  // 快捷键切换分屏
+  useEffect(() => {
+    const handleSplitKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === '\\') {
+        e.preventDefault();
+        const modes: SplitMode[] = ['single', 'left-right', 'top-bottom', 'grid', 'layout-1-2'];
+        const currentIndex = modes.indexOf(splitMode);
+        const nextIndex = (currentIndex + 1) % modes.length;
+        handleSplitModeChange(modes[nextIndex]);
+      }
+    };
+    window.addEventListener('keydown', handleSplitKeyDown);
+    return () => window.removeEventListener('keydown', handleSplitKeyDown);
+  }, [splitMode, handleSplitModeChange]);
+
   const hasActiveSession = sessions.length > 0;
 
   return (
@@ -502,8 +546,38 @@ const Terminal: React.FC = () => {
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* 分屏模式切换 */}
+          {sessions.length > 1 && (
+            <div style={{ display: 'flex', gap: '4px', padding: '2px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '6px' }}>
+              {([
+                { mode: 'single' as SplitMode, icon: '▢', title: '单个' },
+                { mode: 'left-right' as SplitMode, icon: '▐▌', title: '左右' },
+                { mode: 'top-bottom' as SplitMode, icon: '▄▀', title: '上下' },
+                { mode: 'grid' as SplitMode, icon: '田', title: '田字' },
+                { mode: 'layout-1-2' as SplitMode, icon: '1:2', title: '1+2' },
+              ]).map(({ mode, icon, title }) => (
+                <button
+                  key={mode}
+                  onClick={() => handleSplitModeChange(mode)}
+                  title={`${title}分屏 (Ctrl+\\)`}
+                  style={{
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    backgroundColor: splitMode === mode ? 'var(--accent-color)' : 'transparent',
+                    color: splitMode === mode ? 'white' : 'var(--text-secondary)',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+          )}
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            Ctrl+T 新建 | Ctrl+W 关闭 | Ctrl+Tab 切换
+            Ctrl+T 新建 | Ctrl+W 关闭 | Ctrl+Tab 切换 | Ctrl+\\ 分屏
           </span>
           {!hasActiveSession ? (
             <Button
@@ -533,9 +607,12 @@ const Terminal: React.FC = () => {
           backgroundColor: 'var(--terminal-bg)',
           padding: '8px',
           position: 'relative',
+          display: 'flex',
+          gap: '8px',
+          ...(splitMode === 'top-bottom' ? { flexDirection: 'column' } : {}),
         }}
       >
-        {!hasActiveSession && (
+        {!hasActiveSession && splitMode === 'single' && (
           <EmptyState
             icon="💬"
             title={currentProject ? '开始与 Claude 对话' : '选择项目以开始'}
@@ -549,6 +626,114 @@ const Terminal: React.FC = () => {
                 </Button>
               )
             }
+          />
+        )}
+
+        {/* 渲染所有会话终端（分屏模式下全部显示） */}
+        {sessions.map((session) => {
+          // 计算这个会话应该在哪些分屏中显示
+          const paneIndices = splitPanes
+            .map((pane, idx) => pane.sessionId === session.sessionId ? idx : -1)
+            .filter(idx => idx >= 0);
+
+          // 如果分屏模式不是 single 且没有分配到任何分屏，则不显示
+          if (splitMode !== 'single' && paneIndices.length === 0) {
+            // 检查是否有空的分屏
+            const hasEmptyPane = splitPanes.some(p => p.sessionId === null);
+            if (hasEmptyPane) {
+              // 自动分配到第一个空分屏
+              const firstEmptyIdx = splitPanes.findIndex(p => p.sessionId === null);
+              const newPanes = [...splitPanes];
+              newPanes[firstEmptyIdx] = { ...newPanes[firstEmptyIdx], sessionId: session.sessionId };
+              setSplitPanes(newPanes);
+            }
+            return null;
+          }
+
+          // 检查是否是当前活动会话
+          const isActive = activeSessionId === session.sessionId;
+          const isVisible = splitMode === 'single' ? isActive : paneIndices.length > 0;
+
+          return (
+            <div
+              key={session.sessionId}
+              style={{
+                flex: splitMode === 'single' ? 1 : (splitPanes[0]?.flex || 1),
+                display: isVisible ? 'flex' : 'none',
+                flexDirection: 'column',
+                minWidth: 0,
+                minHeight: 0,
+                backgroundColor: 'var(--terminal-bg)',
+                borderRadius: '8px',
+                overflow: 'hidden',
+              }}
+            >
+              {/* 分屏标题栏 */}
+              {splitMode !== 'single' && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '4px 8px',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  borderBottom: '1px solid var(--border-color)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--success-color)',
+                    }} />
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      {session.projectName}
+                    </span>
+                  </div>
+                  <select
+                    value={session.sessionId}
+                    onChange={(e) => {
+                      const newSessionId = e.target.value;
+                      const paneIdx = splitPanes.findIndex(p => p.sessionId === session.sessionId);
+                      if (paneIdx >= 0) {
+                        const newPanes = [...splitPanes];
+                        newPanes[paneIdx] = { ...newPanes[paneIdx], sessionId: newSessionId };
+                        setSplitPanes(newPanes);
+                      }
+                    }}
+                    style={{
+                      fontSize: '10px',
+                      padding: '2px 4px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {sessions.map(s => (
+                      <option key={s.sessionId} value={s.sessionId}>
+                        {s.projectName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div
+                style={{
+                  flex: 1,
+                  display: splitMode === 'single' ? (isActive ? 'block' : 'none') : 'block',
+                }}
+              />
+            </div>
+          );
+        })}
+
+        {/* 单分屏模式下的空状态 */}
+        {hasActiveSession && splitMode === 'single' && sessions.length === 0 && (
+          <EmptyState
+            icon="💬"
+            title="暂无会话"
+            description="点击启动 Claude 开始对话"
           />
         )}
       </div>
