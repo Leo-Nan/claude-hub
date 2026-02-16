@@ -158,6 +158,17 @@ export function setupIPC() {
     return store.getCurrentProject();
   });
 
+  // Update Agent configuration
+  ipcMain.handle('update-agent', (_event, projectId: string, agentId: string, updates: Partial<Agent>) => {
+    const project = store.getProjects().find(p => p.id === projectId);
+    if (!project) return { error: '项目不存在' };
+    const agent = project.agents.find(a => a.id === agentId);
+    if (!agent) return { error: 'Agent 不存在' };
+    Object.assign(agent, updates);
+    store.updateProject(projectId, { agents: project.agents });
+    return agent;
+  });
+
   // Theme management
   ipcMain.handle('get-theme', () => {
     return store.getTheme();
