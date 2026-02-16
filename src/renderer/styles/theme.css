@@ -32,6 +32,13 @@
   --font-sm: 12px;
   --font-md: 14px;
   --font-lg: 16px;
+  /* 间距 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
 }
 
 /* Dark 主题 - 现代深色 IDE 风格 */
@@ -63,6 +70,13 @@
   --font-sm: 12px;
   --font-md: 14px;
   --font-lg: 16px;
+  /* 间距 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
 }
 
 /* 全局样式 */
