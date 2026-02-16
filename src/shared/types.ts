@@ -12,14 +12,27 @@ export interface Project {
   tags?: TagColor[];
 }
 
+// Agent 类型
+export type AgentType = 'researcher' | 'engineer' | 'reviewer' | 'planner' | 'coordinator';
+
 export interface Agent {
   id: string;
   name: string;
-  type: 'researcher' | 'engineer' | 'reviewer';
+  type: AgentType;
   skills: string[];
   status: 'active' | 'idle' | 'thinking';
   rules?: string;
   systemPrompt?: string;
+}
+
+// Agent 关系类型
+export type AgentRelationType = 'command' | 'dependency' | 'collaboration' | 'group';
+
+export interface AgentRelation {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  type: AgentRelationType;
 }
 
 export interface AppConfig {
