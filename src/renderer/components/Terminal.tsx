@@ -112,8 +112,8 @@ const Terminal: React.FC = () => {
     }
 
     // 限制最大会话数
-    if (sessions.length >= 3) {
-      alert('最多支持 3 个并发会话');
+    if (sessions.length >= 5) {
+      alert('最多支持 5 个并发会话');
       return;
     }
 
@@ -276,6 +276,56 @@ const Terminal: React.FC = () => {
     }
   }, [activeSessionId, showSession]);
 
+  // 快捷键处理 - Tab 管理
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 忽略当焦点在输入框等元素上时
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Ctrl+T: 新建会话
+      if (e.ctrlKey && e.key === 't') {
+        e.preventDefault();
+        handleStartSession();
+        return;
+      }
+
+      // Ctrl+W: 关闭当前会话
+      if (e.ctrlKey && e.key === 'w') {
+        e.preventDefault();
+        if (activeSessionId) {
+          handleCloseSession(activeSessionId);
+        }
+        return;
+      }
+
+      // Ctrl+Tab: 切换到下一个会话
+      if (e.ctrlKey && e.key === 'Tab') {
+        e.preventDefault();
+        if (sessions.length > 1) {
+          const currentIndex = sessions.findIndex(s => s.sessionId === activeSessionId);
+          const nextIndex = (currentIndex + 1) % sessions.length;
+          handleSelectSession(sessions[nextIndex].sessionId);
+        }
+        return;
+      }
+
+      // Ctrl+1-5: 快速切换到指定会话
+      if (e.ctrlKey && e.key >= '1' && e.key <= '5') {
+        e.preventDefault();
+        const index = parseInt(e.key) - 1;
+        if (index < sessions.length) {
+          handleSelectSession(sessions[index].sessionId);
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeSessionId, sessions, handleStartSession, handleCloseSession, handleSelectSession]);
+
   const hasActiveSession = sessions.length > 0;
 
   return (
@@ -292,15 +342,25 @@ const Terminal: React.FC = () => {
             overflowX: 'auto',
           }}
         >
-          {sessions.map((session) => (
+          {sessions.map((session, index) => (
             <div
               key={session.sessionId}
               onClick={() => handleSelectSession(session.sessionId)}
+              onMouseEnter={(e) => {
+                if (activeSessionId !== session.sessionId) {
+                  e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeSessionId !== session.sessionId) {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                }
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '6px 12px',
+                gap: '6px',
+                padding: '6px 10px',
                 backgroundColor:
                   activeSessionId === session.sessionId
                     ? 'var(--bg-primary)'
@@ -316,9 +376,19 @@ const Terminal: React.FC = () => {
                   activeSessionId === session.sessionId
                     ? '1px solid var(--accent-color)'
                     : '1px solid transparent',
-                transition: 'all 0.15s',
+                boxShadow: activeSessionId === session.sessionId ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all 0.15s ease',
               }}
             >
+              {/* 会话索引 */}
+              <span style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                opacity: 0.7,
+              }}>{index + 1}</span>
+
+              {/* 状态指示器 */}
               <span
                 style={{
                   width: '8px',
@@ -326,33 +396,81 @@ const Terminal: React.FC = () => {
                   borderRadius: '50%',
                   backgroundColor: 'var(--success-color)',
                   flexShrink: 0,
+                  boxShadow: activeSessionId === session.sessionId ? '0 0 6px var(--success-color)' : 'none',
                 }}
               />
-              <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+
+              {/* 项目名称 */}
+              <span style={{
+                maxWidth: '100px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                fontWeight: activeSessionId === session.sessionId ? 500 : 400,
+              }}>
                 {session.projectName}
               </span>
-              <Button
-                size="sm"
-                variant="ghost"
+
+              {/* 关闭按钮 */}
+              <span
                 onClick={(e: any) => {
                   e.stopPropagation();
                   handleCloseSession(session.sessionId);
                 }}
-                style={{ padding: '2px 6px', minWidth: 'auto' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--danger-color)';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  transition: 'all 0.1s',
+                  marginLeft: '2px',
+                }}
               >
                 ×
-              </Button>
+              </span>
             </div>
           ))}
-          {sessions.length < 3 && currentProject && (
-            <Button
-              variant="ghost"
-              size="sm"
+          {sessions.length < 5 && currentProject && (
+            <button
               onClick={handleStartSession}
-              style={{ gap: '4px' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '6px 10px',
+                backgroundColor: 'transparent',
+                border: '1px dashed var(--border-color)',
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--text-muted)',
+                fontSize: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--accent-color)';
+                e.currentTarget.style.color = 'var(--accent-color)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.color = 'var(--text-muted)';
+              }}
             >
-              + 新建
-            </Button>
+              +
+            </button>
           )}
         </div>
       )}
@@ -385,7 +503,7 @@ const Terminal: React.FC = () => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            Ctrl+C 复制 | Ctrl+V 粘贴 | Ctrl+L 清屏
+            Ctrl+T 新建 | Ctrl+W 关闭 | Ctrl+Tab 切换
           </span>
           {!hasActiveSession ? (
             <Button

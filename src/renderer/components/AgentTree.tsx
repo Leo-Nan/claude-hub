@@ -187,102 +187,177 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
         textTransform: 'uppercase',
         letterSpacing: '0.5px',
         color: 'var(--text-muted)',
-      }}>Agent 团队</div>
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <span>Agent 团队</span>
+        <span style={{ fontWeight: 400, fontSize: '10px', opacity: 0.6 }}>
+          {agents.length} 个 Agent
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
         {/* Root Agent */}
         <div
           style={{
-            padding: '12px 16px',
+            padding: '10px 14px',
             backgroundColor: 'var(--bg-primary)',
             borderRadius: '8px',
-            border: '1px solid var(--border-color)',
-            boxShadow: 'var(--shadow-sm)',
+            border: '1px solid var(--accent-color)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--accent-color)',
-                boxShadow: '0 0 8px var(--accent-color)',
-              }}
-            />
-            <span style={{ fontWeight: 600, fontSize: '13px' }}>私人秘书</span>
-          </div>
+          <span
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--accent-color)',
+              boxShadow: '0 0 8px var(--accent-color)',
+              animation: 'pulse 2s ease-in-out infinite',
+            }}
+          />
+          <span style={{ fontWeight: 600, fontSize: '13px' }}>私人秘书</span>
+          <span style={{
+            fontSize: '10px',
+            padding: '2px 6px',
+            backgroundColor: 'var(--accent-color)',
+            color: 'white',
+            borderRadius: '10px',
+          }}>主</span>
         </div>
 
         {/* Child Agents */}
         {agents.map((agent) => (
           <div
             key={agent.id}
+            onClick={() => handleAgentClick(agent.id)}
             style={{
-              padding: '12px 16px',
+              padding: '10px 14px',
               backgroundColor: 'var(--bg-primary)',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--border-color)',
-              boxShadow: 'var(--shadow-sm)',
-              marginLeft: '24px',
-              position: 'relative',
-              transition: 'border-color 0.15s, box-shadow 0.15s',
+              borderRadius: '8px',
+              border: `1px solid ${selectedAgent === agent.id ? 'var(--accent-color)' : 'var(--border-color)'}`,
+              boxShadow: selectedAgent === agent.id ? '0 4px 12px rgba(0,0,0,0.15)' : 'var(--shadow-sm)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              minWidth: '140px',
+            }}
+            onMouseEnter={(e) => {
+              if (selectedAgent !== agent.id) {
+                e.currentTarget.style.borderColor = 'var(--text-muted)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (selectedAgent !== agent.id) {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+              }
             }}
           >
-            {/* Connector line */}
-            <div
-              style={{
-                position: 'absolute',
-                left: '-24px',
-                top: '50%',
-                width: '24px',
-                height: '1px',
-                backgroundColor: 'var(--border-color)',
-              }}
-            />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Agent Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
               <span
-                onClick={() => handleAgentClick(agent.id)}
                 style={{
-                  width: '10px',
-                  height: '10px',
+                  width: '8px',
+                  height: '8px',
                   borderRadius: '50%',
                   backgroundColor: STATUS_COLORS[agent.status],
-                  cursor: 'pointer',
+                  boxShadow: agent.status === 'active' ? `0 0 6px ${STATUS_COLORS[agent.status]}` : 'none',
+                  animation: agent.status === 'thinking' ? 'pulse 1s ease-in-out infinite' : 'none',
                 }}
-                title="点击打开操作菜单"
               />
-              <span
-                onClick={() => handleAgentClick(agent.id)}
-                style={{ fontWeight: 500, cursor: 'pointer' }}
-              >
+              <span style={{ fontWeight: 500, fontSize: '13px', flex: 1 }}>
                 {agent.name}
               </span>
-              {selectedAgent === agent.id && (
-                <AgentMenu
-                  agent={agent}
-                  onClose={() => setSelectedAgent(null)}
-                  onStatusChange={onStatusChange}
-                />
-              )}
+              <span style={{
+                fontSize: '10px',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                backgroundColor: agent.status === 'active' ? 'var(--success-color)' : agent.status === 'thinking' ? 'var(--warning-color)' : 'var(--bg-tertiary)',
+                color: agent.status === 'active' ? 'white' : agent.status === 'thinking' ? 'black' : 'var(--text-secondary)',
+              }}>
+                {STATUS_LABELS[agent.status]}
+              </span>
             </div>
-            <div
-              style={{
-                marginTop: '8px',
-                fontSize: '12px',
-                color: 'var(--text-secondary)',
-              }}
-            >
+
+            {/* Skills */}
+            <div style={{
+              fontSize: '11px',
+              color: 'var(--text-muted)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
               能力: {agent.skills.join(', ')}
             </div>
-            <div
-              style={{
-                marginTop: '4px',
-                fontSize: '11px',
-                color: STATUS_COLORS[agent.status],
-              }}
-            >
-              {STATUS_LABELS[agent.status]}
-            </div>
+
+            {/* Quick Actions */}
+            {selectedAgent === agent.id && (
+              <div style={{
+                marginTop: '8px',
+                paddingTop: '8px',
+                borderTop: '1px solid var(--border-light)',
+                display: 'flex',
+                gap: '8px',
+              }}>
+                {agent.status !== 'active' ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onStatusChange(agent.id, 'active');
+                    }}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '11px',
+                      backgroundColor: 'var(--success-color)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    启动
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onStatusChange(agent.id, 'idle');
+                    }}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '11px',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    停止
+                  </button>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(agent.id, agent.status === 'thinking' ? 'idle' : 'thinking');
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    fontSize: '11px',
+                    backgroundColor: agent.status === 'thinking' ? 'var(--warning-color)' : 'var(--bg-tertiary)',
+                    color: agent.status === 'thinking' ? 'black' : 'var(--text-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {agent.status === 'thinking' ? '取消思考' : '思考'}
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
