@@ -22,6 +22,8 @@ interface ElectronAPI {
   getCurrentProject: () => Promise<Project | null>;
   updateAgentStatus: (projectId: string, agentId: string, status: string) => Promise<Project | null>;
   updateAgent: (projectId: string, agentId: string, updates: Partial<Agent>) => Promise<Agent | { error: string }>;
+  createAgent: (projectId: string, agentData: Partial<Agent>) => Promise<Agent | { error: string }>;
+  deleteAgent: (projectId: string, agentId: string) => Promise<{ success: boolean } | { error: string }>;
 
   // Theme management
   getTheme: () => Promise<string>;

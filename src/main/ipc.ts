@@ -169,6 +169,38 @@ export function setupIPC() {
     return agent;
   });
 
+  // Create new agent
+  ipcMain.handle('create-agent', (_event, projectId: string, agentData: Partial<Agent>) => {
+    const projects = store.getProjects();
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return { error: '项目不存在' };
+
+    const newAgent: Agent = {
+      id: `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: agentData.name || '新 Agent',
+      type: agentData.type || 'engineer',
+      skills: agentData.skills || [],
+      status: 'idle',
+      rules: agentData.rules || '',
+      systemPrompt: agentData.systemPrompt || '',
+    };
+
+    project.agents.push(newAgent);
+    store.updateProject(projectId, { agents: project.agents });
+    return newAgent;
+  });
+
+  // Delete agent
+  ipcMain.handle('delete-agent', (_event, projectId: string, agentId: string) => {
+    const projects = store.getProjects();
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return { error: '项目不存在' };
+
+    project.agents = project.agents.filter(a => a.id !== agentId);
+    store.updateProject(projectId, { agents: project.agents });
+    return { success: true };
+  });
+
   // Theme management
   ipcMain.handle('get-theme', () => {
     return store.getTheme();

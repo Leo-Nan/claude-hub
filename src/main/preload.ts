@@ -11,6 +11,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('update-agent-status', projectId, agentId, status),
   updateAgent: (projectId: string, agentId: string, updates: Record<string, unknown>) =>
     ipcRenderer.invoke('update-agent', projectId, agentId, updates),
+  createAgent: (projectId: string, agentData: Record<string, unknown>) =>
+    ipcRenderer.invoke('create-agent', projectId, agentData),
+  deleteAgent: (projectId: string, agentId: string) =>
+    ipcRenderer.invoke('delete-agent', projectId, agentId),
 
   // Theme management
   getTheme: () => ipcRenderer.invoke('get-theme'),

@@ -208,6 +208,28 @@ function App() {
     }
   };
 
+  const handleCreateAgent = async (agentData: Partial<Agent>) => {
+    if (!currentProject) return;
+    const result = await window.electronAPI.createAgent(currentProject.id, agentData);
+    if (result && 'error' in result) {
+      setError(getFriendlyError(result.error));
+      return;
+    }
+    if (result && !('error' in result)) {
+      const updatedAgents = [...currentProject.agents, result as Agent];
+      setCurrentProject({ ...currentProject, agents: updatedAgents });
+    }
+  };
+
+  const handleDeleteAgent = async (agentId: string) => {
+    if (!currentProject) return;
+    const result = await window.electronAPI.deleteAgent(currentProject.id, agentId);
+    if (result && 'success') {
+      const updatedAgents = currentProject.agents.filter(a => a.id !== agentId);
+      setCurrentProject({ ...currentProject, agents: updatedAgents });
+    }
+  };
+
   // Loading screen
   if (isLoading) {
     return (
@@ -320,6 +342,8 @@ function App() {
                 console.log('Select agent:', agentId);
               }}
               onUpdateAgent={handleUpdateAgent}
+              onCreateAgent={handleCreateAgent}
+              onDeleteAgent={handleDeleteAgent}
               width={agentCanvasWidth}
               onWidthChange={setAgentCanvasWidth}
             />

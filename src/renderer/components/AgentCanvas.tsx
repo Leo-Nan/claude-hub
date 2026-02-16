@@ -6,6 +6,8 @@ interface AgentCanvasProps {
   onStatusChange: (agentId: string, status: Agent['status']) => void;
   onSelectAgent: (agentId: string) => void;
   onUpdateAgent: (agentId: string, updates: Partial<Agent>) => void;
+  onCreateAgent?: (agentData: Partial<Agent>) => void;
+  onDeleteAgent?: (agentId: string) => void;
   width?: number;
   onWidthChange?: (width: number) => void;
 }
@@ -33,6 +35,8 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
   onStatusChange,
   onSelectAgent,
   onUpdateAgent,
+  onCreateAgent,
+  onDeleteAgent,
   width: initialWidth,
   onWidthChange,
 }) => {
@@ -203,6 +207,24 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
           }}
         >
           {/* Agent List */}
+          {onCreateAgent && (
+            <button
+              onClick={() => onCreateAgent({ name: '新 Agent', type: 'engineer', skills: [] })}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: 'var(--accent-color)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                marginBottom: '12px',
+                width: '100%',
+              }}
+            >
+              + 添加 Agent
+            </button>
+          )}
           <div
             style={{
               display: 'flex',
@@ -268,6 +290,26 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
                   <span style={{ fontWeight: 500, fontSize: '13px', flex: 1 }}>
                     {agent.name}
                   </span>
+                  {onDeleteAgent && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteAgent(agent.id);
+                      }}
+                      style={{
+                        padding: '2px 6px',
+                        fontSize: '10px',
+                        backgroundColor: 'transparent',
+                        color: 'var(--text-muted)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                      }}
+                      title="删除 Agent"
+                    >
+                      删除
+                    </button>
+                  )}
                   <span
                     style={{
                       fontSize: '10px',
