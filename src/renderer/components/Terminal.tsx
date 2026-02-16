@@ -39,6 +39,10 @@ const Terminal: React.FC = () => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [splitMode, setSplitMode] = useState<SplitMode>('single');
   const [splitPanes, setSplitPanes] = useState<SplitPane[]>([{ sessionId: null }]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<number[]>([]);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const { theme, setSessionActive, currentProject } = useAppStore();
 
 // 主题颜色配置
@@ -370,6 +374,93 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
     return () => window.removeEventListener('keydown', handleSplitKeyDown);
   }, [splitMode, handleSplitModeChange]);
 
+  // 快捷键搜索
+  useEffect(() => {
+    const handleSearchKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        setShowSearch(prev => !prev);
+        if (!showSearch) {
+          setTimeout(() => {
+            const input = document.getElementById('terminal-search-input');
+            if (input) input.focus();
+          }, 50);
+        }
+      }
+      if (showSearch && e.key === 'Escape') {
+        setShowSearch(false);
+        setSearchQuery('');
+        setSearchResults([]);
+      }
+      if (showSearch && e.key === 'Enter') {
+        // 搜索结果导航
+        if (searchResults.length > 0) {
+          const nextIndex = (currentSearchIndex + 1) % searchResults.length;
+          setCurrentSearchIndex(nextIndex);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleSearchKeyDown);
+    return () => window.removeEventListener('keydown', handleSearchKeyDown);
+  }, [showSearch, searchResults, currentSearchIndex]);
+
+  // 搜索功能
+  const handleSearch = useCallback(() => {
+    if (!searchQuery.trim() || !activeSessionId) {
+      setSearchResults([]);
+      return;
+    }
+    const session = sessions.find(s => s.sessionId === activeSessionId);
+    if (!session) return;
+
+    // 获取终端内容并搜索
+    const buffer = session.term.buffer.active;
+    const lines: number[] = [];
+    for (let i = 0; i < buffer.length; i++) {
+      const line = buffer.getLine(i);
+      if (line && line.text.toLowerCase().includes(searchQuery.toLowerCase())) {
+        lines.push(i);
+      }
+    }
+    setSearchResults(lines);
+    setCurrentSearchIndex(0);
+  }, [searchQuery, activeSessionId, sessions]);
+
+  // 搜索变化时重新搜索
+  useEffect(() => {
+    handleSearch();
+  }, [searchQuery, handleSearch]);
+
+  // 导出日志
+  const handleExportLog = useCallback(() => {
+    if (!activeSessionId) return;
+    const session = sessions.find(s => s.sessionId === activeSessionId);
+    if (!session) return;
+
+    const buffer = session.term.buffer.active;
+    let content = `Claude Hub Terminal Log\n`;
+    content += `Project: ${session.projectName}\n`;
+    content += `Path: ${session.projectPath}\n`;
+    content += `Exported: ${new Date().toLocaleString()}\n`;
+    content += `${'='.repeat(50)}\n\n`;
+
+    for (let i = 0; i < buffer.length; i++) {
+      const line = buffer.getLine(i);
+      if (line) {
+        content += line.text + '\n';
+      }
+    }
+
+    // 下载文件
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `terminal-${session.projectName}-${Date.now()}.log`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [activeSessionId, sessions]);
+
   const hasActiveSession = sessions.length > 0;
 
   return (
@@ -546,6 +637,65 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* 搜索栏 */}
+          {hasActiveSession && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                onClick={() => setShowSearch(!showSearch)}
+                title="搜索 (Ctrl+F)"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '12px',
+                  backgroundColor: showSearch ? 'var(--accent-color)' : 'transparent',
+                  color: showSearch ? 'white' : 'var(--text-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                }}
+              >
+                🔍
+              </button>
+              {showSearch && (
+                <input
+                  id="terminal-search-input"
+                  type="text"
+                  placeholder="搜索..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    width: '120px',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    outline: 'none',
+                  }}
+                />
+              )}
+              {searchResults.length > 0 && (
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                  {currentSearchIndex + 1}/{searchResults.length}
+                </span>
+              )}
+              <button
+                onClick={handleExportLog}
+                title="导出日志"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '12px',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                }}
+              >
+                📥
+              </button>
+            </div>
+          )}
           {/* 分屏模式切换 */}
           {sessions.length > 1 && (
             <div style={{ display: 'flex', gap: '4px', padding: '2px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '6px' }}>
@@ -577,7 +727,7 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
             </div>
           )}
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            Ctrl+T 新建 | Ctrl+W 关闭 | Ctrl+Tab 切换 | Ctrl+\\ 分屏
+            Ctrl+T 新建 | Ctrl+W 关闭 | Ctrl+F 搜索 | Ctrl+\\ 分屏
           </span>
           {!hasActiveSession ? (
             <Button
