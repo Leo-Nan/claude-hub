@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openInVSCode: (filePath: string) => ipcRenderer.invoke('open-in-vscode', filePath),
   copyPath: (filePath: string) => ipcRenderer.invoke('copy-path', filePath),
 
+  // Notifications
+  showNotification: (title: string, body: string) => ipcRenderer.invoke('show-notification', title, body),
+
   // Claude session management (multi-session support)
   startClaudeSession: (projectPath: string) => ipcRenderer.invoke('start-claude-session', projectPath),
   sendClaudeInput: (sessionId: string, input: string) => ipcRenderer.invoke('send-claude-input', sessionId, input),

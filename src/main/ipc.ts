@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell } from 'electron';
+import { ipcMain, dialog, shell, Notification } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as store from './store';
@@ -73,6 +73,20 @@ function isValidTheme(theme: unknown): theme is 'light' | 'dark' {
 }
 
 export function setupIPC() {
+  // Show notification
+  ipcMain.handle('show-notification', (_event, title: string, body: string) => {
+    if (Notification.isSupported()) {
+      const notification = new Notification({
+        title,
+        body,
+        silent: false,
+      });
+      notification.show();
+      return { success: true };
+    }
+    return { success: false, error: 'Notifications not supported' };
+  });
+
   // Get all projects
   ipcMain.handle('get-projects', () => {
     return store.getProjects();

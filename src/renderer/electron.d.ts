@@ -30,8 +30,11 @@ interface ElectronAPI {
   // File tree management
   getProjectFiles: (projectPath: string) => Promise<FileNode[]>;
   openInExplorer: (filePath: string) => Promise<{ success: boolean }>;
-  openInVSCode: (filePath: string) => Promise<{ success: boolean }>;
+  openInVsCode: (filePath: string) => Promise<{ success: boolean }>;
   copyPath: (filePath: string) => Promise<{ success: boolean }>;
+
+  // Notifications
+  showNotification: (title: string, body: string) => Promise<{ success: boolean; error?: string }>;
 
   // Claude session management (multi-session support)
   startClaudeSession: (projectPath: string) => Promise<{ success: boolean; sessionId?: string; error?: string }>;

@@ -72,6 +72,8 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
   // 显示指定的会话终端 - 使用 ref 避免不必要重建
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
+  const activeSessionIdRef = useRef(activeSessionId);
+  activeSessionIdRef.current = activeSessionId;
 
   const showSession = useCallback((sessionId: string) => {
     sessionsRef.current.forEach((session) => {
