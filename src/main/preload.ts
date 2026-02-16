@@ -14,18 +14,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setTheme: (theme: 'light' | 'dark') => ipcRenderer.invoke('set-theme', theme),
   getVersion: () => ipcRenderer.invoke('get-version'),
 
-  // Claude session management
+  // Claude session management (multi-session support)
   startClaudeSession: (projectPath: string) => ipcRenderer.invoke('start-claude-session', projectPath),
-  sendClaudeInput: (input: string) => ipcRenderer.invoke('send-claude-input', input),
-  killClaudeSession: () => ipcRenderer.invoke('kill-claude-session'),
-  resizePty: (cols: number, rows: number) => ipcRenderer.invoke('resize-pty', cols, rows),
-  onClaudeOutput: (callback: (data: string) => void) => {
+  sendClaudeInput: (sessionId: string, input: string) => ipcRenderer.invoke('send-claude-input', sessionId, input),
+  killClaudeSession: (sessionId?: string) => ipcRenderer.invoke('kill-claude-session', sessionId),
+  getActiveSessions: () => ipcRenderer.invoke('get-active-sessions'),
+  resizePty: (sessionId: string, cols: number, rows: number) => ipcRenderer.invoke('resize-pty', sessionId, cols, rows),
+
+  // Listen for Claude output (now with sessionId)
+  onClaudeOutput: (callback: (data: { sessionId: string; data: string }) => void) => {
     ipcRenderer.on('claude-output', (_event, data) => callback(data));
   },
+  // Listen for errors
   onClaudeError: (callback: (error: string) => void) => {
     ipcRenderer.on('claude-error', (_event, error) => callback(error));
   },
-  onClaudeClose: (callback: (code: number) => void) => {
-    ipcRenderer.on('claude-close', (_event, code) => callback(code));
+  // Listen for close (now with sessionId)
+  onClaudeClose: (callback: (data: { sessionId: string; exitCode: number }) => void) => {
+    ipcRenderer.on('claude-close', (_event, data) => callback(data));
   },
 });

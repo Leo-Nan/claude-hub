@@ -256,7 +256,7 @@ function App() {
           isAddingProject={isAddingProject}
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Terminal projectPath={currentProject?.path || null} />
+          <Terminal />
           {currentProject && (
             <AgentTree
               agents={currentProject.agents}
