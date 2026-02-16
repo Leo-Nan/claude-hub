@@ -3,6 +3,7 @@ import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 import { useAppStore } from '../stores/appStore';
+import { Button, EmptyState, Badge } from './ui';
 
 // 单个会话终端
 interface SessionTerminal {
@@ -60,7 +61,6 @@ const Terminal: React.FC = () => {
 
   // 创建终端并显示
   const createAndShowTerminal = useCallback((
-    sessionId: string,
     projectPath: string,
     projectName: string
   ) => {
@@ -86,10 +86,12 @@ const Terminal: React.FC = () => {
     fitAddon.fit();
 
     // 显示欢迎信息
-    term.writeln('\x1b[36mClaude Hub Terminal\x1b[0m');
+    term.writeln('\x1b[36m╔══════════════════════════════════════╗\x1b[0m');
+    term.writeln('\x1b[36m║\x1b[0m     \x1b[1;34mClaude Hub Terminal\x1b[0m             \x1b[36m║\x1b[0m');
+    term.writeln('\x1b[36m╚══════════════════════════════════════╝\x1b[0m');
     term.writeln('');
-    term.writeln(`\x1b[32m项目: ${projectName}\x1b[0m`);
-    term.writeln(`\x1b[90m路径: ${projectPath}\x1b[0m`);
+    term.writeln(`\x1b[32m▸ 项目:\x1b[0m ${projectName}`);
+    term.writeln(`\x1b[90m▸ 路径:\x1b[0m ${projectPath}`);
     term.writeln('');
 
     return { term, fitAddon, container: terminalContainer };
@@ -116,18 +118,14 @@ const Terminal: React.FC = () => {
     }
 
     // 创建终端
-    const result = createAndShowTerminal(
-      '', // sessionId 稍后更新
-      currentProject.path,
-      currentProject.name
-    );
+    const result = createAndShowTerminal(currentProject.path, currentProject.name);
 
     if (!result) return;
 
     const { term, fitAddon, container } = result;
 
     // 显示启动中
-    term.writeln('\x1b[33m正在启动 Claude 会话...\x1b[0m');
+    term.writeln('\x1b[33m▸ 正在启动 Claude 会话...\x1b[0m');
 
     // 启动 Claude
     const startResult = await window.electronAPI.startClaudeSession(currentProject.path);
@@ -233,6 +231,7 @@ const Terminal: React.FC = () => {
     window.electronAPI.onClaudeClose(({ sessionId, exitCode }) => {
       const session = sessions.find((s) => s.sessionId === sessionId);
       if (session) {
+        session.term.writeln(`\x1b[33m─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─\x1b[0m`);
         session.term.writeln(`\x1b[33m会话已结束 (退出码: ${exitCode})\x1b[0m`);
         // 标记为已关闭
         session.term.options.cursorBlink = false;
@@ -286,8 +285,8 @@ const Terminal: React.FC = () => {
         <div
           style={{
             display: 'flex',
-            gap: '2px',
-            padding: '4px 8px',
+            gap: '4px',
+            padding: '6px 12px',
             backgroundColor: 'var(--bg-tertiary)',
             borderBottom: '1px solid var(--border-color)',
             overflowX: 'auto',
@@ -300,13 +299,13 @@ const Terminal: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '8px',
                 padding: '6px 12px',
                 backgroundColor:
                   activeSessionId === session.sessionId
                     ? 'var(--bg-primary)'
                     : 'var(--bg-secondary)',
-                borderRadius: 'var(--radius-sm)',
+                borderRadius: 'var(--radius-md)',
                 cursor: 'pointer',
                 fontSize: '12px',
                 color:
@@ -322,52 +321,38 @@ const Terminal: React.FC = () => {
             >
               <span
                 style={{
-                  width: '6px',
-                  height: '6px',
+                  width: '8px',
+                  height: '8px',
                   borderRadius: '50%',
                   backgroundColor: 'var(--success-color)',
+                  flexShrink: 0,
                 }}
               />
-              <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {session.projectName}
               </span>
-              <button
-                onClick={(e) => {
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e: any) => {
                   e.stopPropagation();
                   handleCloseSession(session.sessionId);
                 }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  padding: '0 2px',
-                  fontSize: '14px',
-                  lineHeight: 1,
-                }}
-                title="关闭会话"
+                style={{ padding: '2px 6px', minWidth: 'auto' }}
               >
                 ×
-              </button>
+              </Button>
             </div>
           ))}
           {sessions.length < 3 && currentProject && (
-            <div
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleStartSession}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '6px 12px',
-                color: 'var(--accent-color)',
-                fontSize: '12px',
-                cursor: 'pointer',
-                borderRadius: 'var(--radius-sm)',
-              }}
-              title="为当前项目启动新会话"
+              style={{ gap: '4px' }}
             >
               + 新建
-            </div>
+            </Button>
           )}
         </div>
       )}
@@ -383,52 +368,43 @@ const Terminal: React.FC = () => {
           backgroundColor: 'var(--bg-secondary)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-            终端 {sessions.length > 0 && `(${sessions.length})`}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              终端
+            </span>
+            {sessions.length > 0 && (
+              <Badge color="var(--success-color)">{sessions.length}</Badge>
+            )}
+          </div>
           {currentProject && (
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              当前: {currentProject.name}
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              {currentProject.name}
             </span>
           )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
             Ctrl+C 复制 | Ctrl+V 粘贴 | Ctrl+L 清屏
           </span>
+          {!hasActiveSession ? (
+            <Button
+              onClick={handleStartSession}
+              disabled={!currentProject?.path}
+              size="sm"
+            >
+              启动 Claude
+            </Button>
+          ) : (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => activeSessionId && handleCloseSession(activeSessionId)}
+            >
+              停止
+            </Button>
+          )}
         </div>
-        {!hasActiveSession ? (
-          <button
-            onClick={handleStartSession}
-            disabled={!currentProject?.path}
-            style={{
-              padding: '6px 16px',
-              backgroundColor: currentProject?.path ? 'var(--accent-color)' : 'var(--bg-tertiary)',
-              color: currentProject?.path ? 'white' : 'var(--text-muted)',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              cursor: currentProject?.path ? 'pointer' : 'not-allowed',
-              fontSize: '13px',
-              fontWeight: 500,
-            }}
-          >
-            启动 Claude
-          </button>
-        ) : (
-          <button
-            onClick={() => activeSessionId && handleCloseSession(activeSessionId)}
-            style={{
-              padding: '6px 16px',
-              backgroundColor: 'var(--danger-color)',
-              color: 'white',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              cursor: 'pointer',
-              fontSize: '13px',
-            }}
-          >
-            停止
-          </button>
-        )}
       </div>
 
       {/* 终端容器 */}
@@ -442,38 +418,20 @@ const Terminal: React.FC = () => {
         }}
       >
         {!hasActiveSession && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              color: 'var(--text-muted)',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ marginBottom: '16px', fontSize: '14px' }}>
-              {currentProject
-                ? '点击「启动 Claude」开始对话'
-                : '请先选择一个项目'}
-            </div>
-            {currentProject?.path && (
-              <button
-                onClick={handleStartSession}
-                style={{
-                  padding: '10px 24px',
-                  backgroundColor: 'var(--accent-color)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                }}
-              >
-                启动 Claude 会话
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon="💬"
+            title={currentProject ? '开始与 Claude 对话' : '选择项目以开始'}
+            description={currentProject
+              ? '点击下方按钮启动 Claude 会话，开始与 AI 助手对话'
+              : '从左侧选择一个项目，然后启动 Claude 会话'}
+            action={
+              currentProject?.path && (
+                <Button onClick={handleStartSession}>
+                  启动 Claude 会话
+                </Button>
+              )
+            }
+          />
         )}
       </div>
     </div>

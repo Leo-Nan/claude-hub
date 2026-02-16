@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Project } from '@shared/types';
 import Modal from './Modal';
+import { Button, Input, EmptyState, Badge } from './ui';
 
 interface SidebarProps {
   projects: Project[];
@@ -117,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       />
       <div
         style={{
-          width: 220,
+          width: 240,
           height: '100%',
           borderRight: '1px solid var(--border-color)',
           display: 'flex',
@@ -129,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* 头部 */}
         <div
           style={{
-            padding: '16px 12px 12px',
+            padding: '16px 16px 12px',
             borderBottom: '1px solid var(--border-light)',
           }}
         >
@@ -139,53 +140,26 @@ const Sidebar: React.FC<SidebarProps> = ({
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
             color: 'var(--text-muted)',
-            marginBottom: '8px',
+            marginBottom: '12px',
           }}>
             项目
           </div>
-        </div>
-        {/* Search input */}
-        <div style={{ padding: '0 12px 12px' }}>
-          <input
-            type="text"
+          <Input
             placeholder="搜索项目..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '6px 10px',
-              fontSize: '12px',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--bg-primary)',
-              color: 'var(--text-primary)',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
+            icon="🔍"
           />
         </div>
-        <div ref={listRef} style={{ flex: 1, overflow: 'auto' }}>
+
+        {/* 项目列表 */}
+        <div ref={listRef} style={{ flex: 1, overflow: 'auto', padding: '8px 0' }}>
           {filteredProjects.length === 0 ? (
-            <div style={{
-              padding: '20px 12px',
-              color: 'var(--text-secondary)',
-              fontSize: '13px',
-              textAlign: 'center',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              alignItems: 'center',
-            }}>
-              <span style={{ fontSize: '24px', lineHeight: 1 }}>
-                {searchQuery ? '🔍' : '📁'}
-              </span>
-              <span>{searchQuery ? '无匹配项目' : '暂无项目'}</span>
-              {!searchQuery && (
-                <span style={{ fontSize: '12px', opacity: 0.8 }}>
-                  点击下方「新建项目」添加
-                </span>
-              )}
-            </div>
+            <EmptyState
+              icon={searchQuery ? '🔍' : '📁'}
+              title={searchQuery ? '无匹配项目' : '暂无项目'}
+              description={searchQuery ? '尝试其他关键词' : '点击下方添加项目'}
+            />
           ) : (
             filteredProjects.map((project, index) => (
               <div
@@ -209,7 +183,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         ? '3px solid var(--success-color)'
                         : '3px solid transparent',
                   transition: 'background-color 0.1s',
-                  position: 'relative',
+                  marginBottom: '2px',
                 }}
               >
                 <div style={{
@@ -219,85 +193,96 @@ const Sidebar: React.FC<SidebarProps> = ({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  paddingRight: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
                 }}>
-                  {project.name}
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {project.name}
+                  </span>
+                  {project.agents && project.agents.length > 0 && (
+                    <Badge color="var(--accent-color)" variant="outline">
+                      {project.agents.length}
+                    </Badge>
+                  )}
                 </div>
                 <div style={{
                   fontSize: '11px',
                   color: 'var(--text-muted)',
-                  marginTop: '2px',
+                  marginTop: '4px',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}>
-                  {project.agents?.length || 0} 个 Agent
+                  {project.path}
                 </div>
                 {/* 删除按钮 - 悬停时显示 */}
-                <button
+                <div
+                  className="delete-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleContextMenu(e, project.id);
                   }}
-                  title="删除项目"
                   style={{
                     position: 'absolute',
                     right: '8px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    borderRadius: 'var(--radius-sm)',
                     opacity: 0,
-                    transition: 'opacity 0.15s, color 0.15s',
-                    fontSize: '14px',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = '1';
-                    e.currentTarget.style.color = 'var(--danger-color)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = '0';
-                    e.currentTarget.style.color = 'var(--text-muted)';
+                    transition: 'opacity 0.15s',
+                    background: 'var(--danger-color)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
                   }}
                 >
-                  ×
-                </button>
+                  删除
+                </div>
               </div>
             ))
           )}
         </div>
-      <div
-        onClick={isAddingProject ? undefined : onAddProject}
-        style={{
-          padding: '12px',
-          borderTop: '1px solid var(--border-color)',
-          cursor: isAddingProject ? 'wait' : 'pointer',
-          color: isAddingProject ? 'var(--text-secondary)' : 'var(--accent-color)',
-          fontWeight: 500,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          opacity: isAddingProject ? 0.7 : 1,
-        }}
-      >
-        {isAddingProject ? (
-          <>
-            <span style={{ animation: 'spin 1s linear infinite' }}>⟳</span>
-            正在添加...
-          </>
-        ) : (
-          <>
-            <span style={{ fontSize: '14px' }}>+</span>
-            新建项目
-          </>
-        )}
+
+        {/* 新建项目按钮 */}
+        <div
+          onClick={isAddingProject ? undefined : onAddProject}
+          style={{
+            padding: '14px 16px',
+            borderTop: '1px solid var(--border-color)',
+            cursor: isAddingProject ? 'wait' : 'pointer',
+            color: isAddingProject ? 'var(--text-secondary)' : 'var(--accent-color)',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            opacity: isAddingProject ? 0.7 : 1,
+            transition: 'all 0.15s',
+            backgroundColor: 'var(--bg-tertiary)',
+          }}
+        >
+          {isAddingProject ? (
+            <>
+              <span style={{ animation: 'spin 1s linear infinite' }}>⟳</span>
+              正在添加...
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize: '16px' }}>+</span>
+              新建项目
+            </>
+          )}
+        </div>
       </div>
-      </div>
+
+      <style>{`
+        [data-project-item]:hover .delete-btn {
+          opacity: 1 !important;
+        }
+      `}</style>
     </>
   );
 };

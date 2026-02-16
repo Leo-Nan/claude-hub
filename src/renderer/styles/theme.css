@@ -86,6 +86,22 @@
   padding: 0;
 }
 
+/* 主题切换过渡动画 */
+html, body, #root,
+body *:not(.xterm) {
+  transition: background-color 0.2s ease,
+              color 0.2s ease,
+              border-color 0.2s ease,
+              box-shadow 0.2s ease !important;
+}
+
+/* 终端不应用过渡动画 */
+.xterm,
+.xterm-screen,
+.xterm-viewport {
+  transition: none !important;
+}
+
 html, body, #root {
   height: 100%;
   width: 100%;
