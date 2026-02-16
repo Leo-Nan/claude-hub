@@ -209,6 +209,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         ? '3px solid var(--success-color)'
                         : '3px solid transparent',
                   transition: 'background-color 0.1s',
+                  position: 'relative',
                 }}
               >
                 <div style={{
@@ -218,6 +219,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  paddingRight: '24px',
                 }}>
                   {project.name}
                 </div>
@@ -231,6 +233,39 @@ const Sidebar: React.FC<SidebarProps> = ({
                 }}>
                   {project.agents?.length || 0} 个 Agent
                 </div>
+                {/* 删除按钮 - 悬停时显示 */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleContextMenu(e, project.id);
+                  }}
+                  title="删除项目"
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    borderRadius: 'var(--radius-sm)',
+                    opacity: 0,
+                    transition: 'opacity 0.15s, color 0.15s',
+                    fontSize: '14px',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                    e.currentTarget.style.color = 'var(--danger-color)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '0';
+                    e.currentTarget.style.color = 'var(--text-muted)';
+                  }}
+                >
+                  ×
+                </button>
               </div>
             ))
           )}
