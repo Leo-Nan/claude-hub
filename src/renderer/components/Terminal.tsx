@@ -33,10 +33,15 @@ const SPLIT_TEMPLATES: Record<SplitMode, SplitPane[]> = {
   'layout-1-2': [{ sessionId: null, flex: 2 }, { sessionId: null, flex: 1 }],
 };
 
-const Terminal: React.FC = () => {
+interface TerminalProps {
+  activeSessionId?: string | null;
+  onSessionChange?: (sessionId: string | null) => void;
+}
+
+const Terminal: React.FC<TerminalProps> = ({ activeSessionId: externalActiveSessionId, onSessionChange }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [sessions, setSessions] = useState<SessionTerminal[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [internalActiveSessionId, setInternalActiveSessionId] = useState<string | null>(null);
   const [splitMode, setSplitMode] = useState<SplitMode>('single');
   const [splitPanes, setSplitPanes] = useState<SplitPane[]>([{ sessionId: null }]);
   const [showSearch, setShowSearch] = useState(false);
@@ -44,6 +49,16 @@ const Terminal: React.FC = () => {
   const [searchResults, setSearchResults] = useState<number[]>([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const { theme, setSessionActive, currentProject } = useAppStore();
+
+  // 使用外部传入的 activeSessionId 或内部状态
+  const activeSessionId = externalActiveSessionId ?? internalActiveSessionId;
+  const setActiveSessionId = (id: string | null) => {
+    if (externalActiveSessionId !== undefined) {
+      onSessionChange?.(id);
+    } else {
+      setInternalActiveSessionId(id);
+    }
+  };
 
 // 主题颜色配置
 const getTerminalTheme = (theme: 'light' | 'dark') => ({
@@ -74,6 +89,17 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
   sessionsRef.current = sessions;
   const activeSessionIdRef = useRef(activeSessionId);
   activeSessionIdRef.current = activeSessionId;
+
+  // 监听外部 activeSessionId 变化，自动切换会话
+  useEffect(() => {
+    if (externalActiveSessionId && sessions.length > 0) {
+      const session = sessions.find(s => s.sessionId === externalActiveSessionId);
+      if (session) {
+        showSession(externalActiveSessionId);
+        setInternalActiveSessionId(externalActiveSessionId);
+      }
+    }
+  }, [externalActiveSessionId, sessions, showSession]);
 
   const showSession = useCallback((sessionId: string) => {
     sessionsRef.current.forEach((session) => {
@@ -246,6 +272,7 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
   const handleSelectSession = (sessionId: string) => {
     setActiveSessionId(sessionId);
     showSession(sessionId);
+    onSessionChange?.(sessionId);
   };
 
   // 监听输出事件 - 使用已有的 ref

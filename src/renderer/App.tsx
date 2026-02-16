@@ -52,6 +52,8 @@ function App() {
     removeProject,
     theme,
     initTheme,
+    activeSessionId,
+    setActiveSessionId,
   } = useAppStore();
   const [error, setError] = useState<string | null>(null);
   const [isAddingProject, setIsAddingProject] = useState(false);
@@ -324,7 +326,10 @@ function App() {
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <Terminal />
+            <Terminal
+              activeSessionId={activeSessionId}
+              onSessionChange={setActiveSessionId}
+            />
             {currentProject && (
               <AgentTree
                 agents={currentProject.agents}
@@ -338,8 +343,8 @@ function App() {
               agents={currentProject.agents}
               onStatusChange={handleAgentStatusChange}
               onSelectAgent={(agentId) => {
-                // 切换到对应会话 - 这里可以留空或实现基础功能
-                console.log('Select agent:', agentId);
+                // 切换到对应会话
+                setActiveSessionId(agentId);
               }}
               onUpdateAgent={handleUpdateAgent}
               onCreateAgent={handleCreateAgent}

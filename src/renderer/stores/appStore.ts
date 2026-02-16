@@ -8,6 +8,7 @@ interface AppState {
   theme: 'light' | 'dark';
   isSessionActive: boolean;
   sessionStartTime: number | null;
+  activeSessionId: string | null;
   setProjects: (projects: Project[]) => void;
   setCurrentProject: (project: Project | null) => void;
   addProject: (project: Project) => void;
@@ -16,6 +17,7 @@ interface AppState {
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
   setSessionActive: (active: boolean, startTime?: number | null) => void;
+  setActiveSessionId: (sessionId: string | null) => void;
   initTheme: () => Promise<void>;
 }
 
@@ -26,6 +28,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   theme: 'light',
   isSessionActive: false,
   sessionStartTime: null,
+  activeSessionId: null,
   setProjects: (projects) => set({ projects }),
   setCurrentProject: (project) => set({ currentProject: project }),
   addProject: (project) =>
@@ -56,6 +59,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       isSessionActive: active,
       sessionStartTime: active ? (startTime ?? Date.now()) : null,
     }),
+  setActiveSessionId: (sessionId) => set({ activeSessionId: sessionId }),
   initTheme: async () => {
     try {
       const savedTheme = await window.electronAPI?.getTheme();
