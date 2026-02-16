@@ -142,6 +142,35 @@ const AgentTree: React.FC<AgentTreeProps> = ({ agents, onStatusChange }) => {
     setSelectedAgent(selectedAgent === agentId ? null : agentId);
   };
 
+  // 空状态
+  if (!agents || agents.length === 0) {
+    return (
+      <div
+        style={{
+          padding: '16px',
+          borderTop: '1px solid var(--border-light)',
+          backgroundColor: 'var(--bg-secondary)',
+          color: 'var(--text-secondary)',
+          textAlign: 'center',
+          fontSize: '13px',
+        }}
+      >
+        <div style={{
+          marginBottom: '8px',
+          fontSize: '11px',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          color: 'var(--text-muted)',
+        }}>Agent 团队</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+          <span>暂无 Agent</span>
+          <span style={{ marginLeft: '8px', opacity: 0.7 }}>可通过对话创建</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
