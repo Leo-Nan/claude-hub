@@ -19,6 +19,9 @@ export interface Agent {
   type: 'researcher' | 'engineer' | 'reviewer';
   skills: string[];
   status: 'active' | 'idle' | 'thinking';
+  // 新增：规则和系统提示词
+  rules?: string;
+  systemPrompt?: string;
 }
 
 export interface AppConfig {
