@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Terminal from './components/Terminal';
-import AgentTree from './components/AgentTree';
 import AgentCanvas from './components/AgentCanvas';
 import StatusBar from './components/StatusBar';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -330,12 +329,6 @@ function App() {
               activeSessionId={activeSessionId}
               onSessionChange={setActiveSessionId}
             />
-            {currentProject && (
-              <AgentTree
-                agents={currentProject.agents}
-                onStatusChange={handleAgentStatusChange}
-              />
-            )}
             <StatusBar currentProject={currentProject} />
           </div>
           {currentProject && (
