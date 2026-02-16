@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Terminal from './components/Terminal';
 import AgentTree from './components/AgentTree';
+import AgentCanvas from './components/AgentCanvas';
 import StatusBar from './components/StatusBar';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useAppStore } from './stores/appStore';
@@ -186,6 +187,26 @@ function App() {
     }
   };
 
+  const handleUpdateAgent = async (agentId: string, updates: Partial<Agent>) => {
+    if (!currentProject) return;
+    const result = await window.electronAPI.updateAgent(
+      currentProject.id,
+      agentId,
+      updates
+    );
+    if (result && 'error' in result) {
+      setError(getFriendlyError(result.error));
+      return;
+    }
+    // 更新 currentProject 中的 agent 数据
+    if (result && !('error' in result)) {
+      const updatedAgents = currentProject.agents.map(a =>
+        a.id === agentId ? { ...a, ...updates } : a
+      );
+      setCurrentProject({ ...currentProject, agents: updatedAgents });
+    }
+  };
+
   // Loading screen
   if (isLoading) {
     return (
@@ -278,15 +299,28 @@ function App() {
           onUpdateProject={handleUpdateProject}
           isAddingProject={isAddingProject}
         />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Terminal />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Terminal />
+            {currentProject && (
+              <AgentTree
+                agents={currentProject.agents}
+                onStatusChange={handleAgentStatusChange}
+              />
+            )}
+            <StatusBar currentProject={currentProject} />
+          </div>
           {currentProject && (
-            <AgentTree
+            <AgentCanvas
               agents={currentProject.agents}
               onStatusChange={handleAgentStatusChange}
+              onSelectAgent={(agentId) => {
+                // 切换到对应会话 - 这里可以留空或实现基础功能
+                console.log('Select agent:', agentId);
+              }}
+              onUpdateAgent={handleUpdateAgent}
             />
           )}
-          <StatusBar currentProject={currentProject} />
         </div>
       </div>
     </ErrorBoundary>
