@@ -8,6 +8,7 @@ interface StatusBarProps {
 
 const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
   const [localTime, setLocalTime] = useState(0);
+  const [currentTime, setCurrentTime] = useState('');
   const [copied, setCopied] = useState(false);
   const { theme, toggleTheme, isSessionActive, sessionStartTime } = useAppStore();
 
@@ -24,6 +25,17 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
     }
     return () => clearInterval(interval);
   }, [isSessionActive, sessionStartTime]);
+
+  // 更新时间显示
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -152,6 +164,14 @@ const StatusBar: React.FC<StatusBarProps> = ({ currentProject }) => {
           {theme === 'light' ? '🌙' : '☀️'}
           <span style={{ fontSize: '11px' }}>{theme === 'light' ? '深色' : '浅色'}</span>
         </button>
+
+        {/* 分隔线 */}
+        <div style={{ width: '1px', height: '14px', backgroundColor: 'var(--border-color)' }} />
+
+        {/* 当前时间 */}
+        <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+          {currentTime}
+        </span>
 
         {/* 分隔线 */}
         <div style={{ width: '1px', height: '14px', backgroundColor: 'var(--border-color)' }} />
