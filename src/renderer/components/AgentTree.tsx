@@ -62,8 +62,8 @@ const AgentMenu: React.FC<AgentMenuProps> = ({ agent, onClose, onStatusChange })
         zIndex: 100,
         backgroundColor: 'var(--bg-primary)',
         border: '1px solid var(--border-color)',
-        borderRadius: '6px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        borderRadius: 'var(--radius-md)',
+        boxShadow: 'var(--shadow-md)',
         minWidth: '140px',
         padding: '4px 0',
       }}
