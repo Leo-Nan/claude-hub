@@ -197,6 +197,7 @@ const Terminal: React.FC<TerminalProps> = ({ projectPath }) => {
               cursor: projectPath ? 'pointer' : 'not-allowed',
               fontSize: '12px',
               fontWeight: 500,
+              transition: 'all 0.15s ease',
             }}
           >
             启动 Claude
