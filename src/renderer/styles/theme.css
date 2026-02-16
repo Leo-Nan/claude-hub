@@ -27,6 +27,11 @@
   --font-mono: 'Cascadia Code', 'Fira Code', Consolas, Monaco, monospace;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --backdrop-bg: rgba(0, 0, 0, 0.5);
+  /* 字体大小 */
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-md: 14px;
+  --font-lg: 16px;
 }
 
 /* Dark 主题 - 现代深色 IDE 风格 */
@@ -53,6 +58,11 @@
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
   --backdrop-bg: rgba(0, 0, 0, 0.7);
+  /* 字体大小 */
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-md: 14px;
+  --font-lg: 16px;
 }
 
 /* 全局样式 */
