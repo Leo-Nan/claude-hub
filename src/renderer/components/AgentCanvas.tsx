@@ -32,6 +32,70 @@ const TYPE_LABELS: Record<string, string> = {
   coordinator: '协调员',
 };
 
+// SVG Relation Lines Component
+const RelationLines: React.FC<{
+  relations: AgentRelation[];
+  positions: Record<string, { x: number; y: number }>;
+}> = ({ relations, positions }) => {
+  return (
+    <svg
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    >
+      <defs>
+        <marker
+          id="arrowhead"
+          markerWidth="10"
+          markerHeight="7"
+          refX="9"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon points="0 0, 10 3.5, 0 7" fill="var(--text-muted)" />
+        </marker>
+      </defs>
+      {relations.map((rel) => {
+        const source = positions[rel.sourceId];
+        const target = positions[rel.targetId];
+        if (!source || !target) return null;
+
+        const x1 = source.x + 140; // Card right edge
+        const y1 = source.y + 40; // Card vertical center
+        const x2 = target.x; // Target left edge
+        const y2 = target.y + 40;
+
+        const style =
+          rel.type === 'dependency'
+            ? { strokeDasharray: '5,5' }
+            : rel.type === 'collaboration'
+            ? { strokeDasharray: '2,2' }
+            : {};
+
+        return (
+          <line
+            key={rel.id}
+            x1={x1}
+            y1={y1}
+            x2={x2}
+            y2={y2}
+            stroke="var(--text-muted)"
+            strokeWidth={2}
+            markerEnd="url(#arrowhead)"
+            {...style}
+          />
+        );
+      })}
+    </svg>
+  );
+};
+
 // Calculate card positions in a grid layout
 const getAgentPosition = (index: number, totalAgents: number) => {
   const cols = Math.min(Math.ceil(Math.sqrt(totalAgents)), 4);
@@ -66,6 +130,8 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
   const [editingSkills, setEditingSkills] = useState('');
   const [panelWidth, setPanelWidth] = useState(initialWidth || 360);
   const [isDragging, setIsDragging] = useState(false);
+  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [relations, setRelations] = useState<AgentRelation[]>([]);
 
   // Sync panel width when initialWidth changes
   useEffect(() => {
@@ -73,6 +139,24 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
       setPanelWidth(initialWidth);
     }
   }, [initialWidth]);
+
+  // Calculate positions and set sample relations
+  useEffect(() => {
+    const newPositions: Record<string, { x: number; y: number }> = {};
+    agents.forEach((agent, index) => {
+      newPositions[agent.id] = getAgentPosition(index, agents.length);
+    });
+    setPositions(newPositions);
+
+    // Set sample relations when there are enough agents
+    if (agents.length >= 2) {
+      setRelations([
+        { id: 'r1', sourceId: agents[0]?.id, targetId: agents[1]?.id, type: 'command' as AgentRelationType },
+      ]);
+    } else {
+      setRelations([]);
+    }
+  }, [agents]);
 
   // Handle drag events
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -254,6 +338,9 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
                 marginBottom: '16px',
               }}
             >
+              {/* SVG Relation Lines */}
+              <RelationLines relations={relations} positions={positions} />
+
               {agents.map((agent, index) => {
                 const { x, y } = getAgentPosition(index, agents.length);
                 return (
