@@ -563,7 +563,7 @@ const getTerminalTheme = (theme: 'light' | 'dark') => ({
 
               {/* 关闭按钮 */}
               <span
-                onClick={(e: any) => {
+                onClick={(e: React.MouseEvent<HTMLSpanElement>) => {
                   e.stopPropagation();
                   handleCloseSession(session.sessionId);
                 }}

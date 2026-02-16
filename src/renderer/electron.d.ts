@@ -1,4 +1,6 @@
 // File tree types
+import { Project, Agent } from '@shared/types';
+
 interface FileNode {
   name: string;
   path: string;
@@ -12,12 +14,12 @@ interface SessionInfo {
 }
 
 interface ElectronAPI {
-  getProjects: () => Promise<any[]>;
-  addProject: () => Promise<any>;
-  removeProject: (id: string) => Promise<any[]>;
-  setCurrentProject: (id: string) => Promise<any>;
-  getCurrentProject: () => Promise<any>;
-  updateAgentStatus: (projectId: string, agentId: string, status: string) => Promise<any>;
+  getProjects: () => Promise<Project[]>;
+  addProject: () => Promise<Project | null>;
+  removeProject: (id: string) => Promise<Project[]>;
+  setCurrentProject: (id: string) => Promise<Project | null>;
+  getCurrentProject: () => Promise<Project | null>;
+  updateAgentStatus: (projectId: string, agentId: string, status: string) => Promise<Project | null>;
 
   // Theme management
   getTheme: () => Promise<string>;
