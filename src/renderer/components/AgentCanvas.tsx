@@ -132,6 +132,9 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [relations, setRelations] = useState<AgentRelation[]>([]);
+  // Agent card drag state
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Sync panel width when initialWidth changes
   useEffect(() => {
@@ -164,6 +167,18 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
     setIsDragging(true);
   };
 
+  // Agent card drag start handler
+  const handleDragStart = (e: React.MouseEvent, agentId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+    setDraggingId(agentId);
+  };
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
@@ -193,6 +208,43 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
       document.body.style.userSelect = '';
     };
   }, [isDragging, onWidthChange]);
+
+  // Agent card drag move handler
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggingId) return;
+
+      const container = document.getElementById('agent-canvas-container');
+      if (!container) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const newX = e.clientX - containerRect.left - dragOffset.x;
+      const newY = e.clientY - containerRect.top - dragOffset.y;
+
+      // 限制范围
+      const boundedX = Math.max(0, Math.min(newX, containerRect.width - 150));
+      const boundedY = Math.max(0, Math.min(newY, containerRect.height - 80));
+
+      setPositions(prev => ({
+        ...prev,
+        [draggingId]: { x: boundedX, y: boundedY }
+      }));
+    };
+
+    const handleMouseUp = () => {
+      setDraggingId(null);
+    };
+
+    if (draggingId) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingId, dragOffset]);
 
   const selectedAgent = agents.find((a) => a.id === selectedAgentId);
 
@@ -331,6 +383,7 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
 
             {/* Canvas Area - Card Layout */}
             <div
+              id="agent-canvas-container"
               style={{
                 position: 'relative',
                 width: '100%',
@@ -342,15 +395,16 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
               <RelationLines relations={relations} positions={positions} />
 
               {agents.map((agent, index) => {
-                const { x, y } = getAgentPosition(index, agents.length);
+                const position = positions[agent.id] || getAgentPosition(index, agents.length);
                 return (
                   <div
                     key={agent.id}
                     onClick={() => handleAgentClick(agent.id)}
+                    onMouseDown={(e) => handleDragStart(e, agent.id)}
                     style={{
                       position: 'absolute',
-                      left: x,
-                      top: y,
+                      left: position.x,
+                      top: position.y,
                       width: 140,
                       padding: 10,
                       backgroundColor: selectedAgentId === agent.id
@@ -362,17 +416,17 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
                           : 'var(--border-color)'
                       }`,
                       borderRadius: 8,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
+                      cursor: draggingId === agent.id ? 'grabbing' : 'grab',
+                      transition: draggingId === agent.id ? 'none' : 'all 0.2s ease',
                     }}
                     onMouseEnter={(e) => {
-                      if (selectedAgentId !== agent.id) {
+                      if (selectedAgentId !== agent.id && draggingId !== agent.id) {
                         e.currentTarget.style.borderColor = 'var(--text-muted)';
                         e.currentTarget.style.transform = 'scale(1.02)';
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (selectedAgentId !== agent.id) {
+                      if (selectedAgentId !== agent.id && draggingId !== agent.id) {
                         e.currentTarget.style.borderColor = 'var(--border-color)';
                         e.currentTarget.style.transform = 'scale(1)';
                       }
