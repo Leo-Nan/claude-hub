@@ -40,6 +40,7 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
   const [isExpanded, setIsExpanded] = useState(true);
   const [editingRules, setEditingRules] = useState('');
   const [editingSystemPrompt, setEditingSystemPrompt] = useState('');
+  const [editingSkills, setEditingSkills] = useState('');
   const [panelWidth, setPanelWidth] = useState(initialWidth || 360);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -93,6 +94,7 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
     if (selectedAgent) {
       setEditingRules(selectedAgent.rules || '');
       setEditingSystemPrompt(selectedAgent.systemPrompt || '');
+      setEditingSkills(selectedAgent.skills.join(', '));
     }
   }, [selectedAgentId, selectedAgent]);
 
@@ -106,6 +108,7 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
       onUpdateAgent(selectedAgentId, {
         rules: editingRules,
         systemPrompt: editingSystemPrompt,
+        skills: editingSkills.split(',').map(s => s.trim()).filter(s => s),
       });
     }
   };
@@ -377,10 +380,27 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
                       letterSpacing: '0.5px',
                     }}
                   >
-                    能力
+                    能力列表 (skills)
                   </div>
-                  <div style={{ color: 'var(--text-primary)' }}>
-                    {selectedAgent.skills.join(', ')}
+                  <textarea
+                    value={editingSkills}
+                    onChange={(e) => setEditingSkills(e.target.value)}
+                    placeholder="输入技能，用逗号分隔，如: coding, testing, review"
+                    style={{
+                      width: '100%',
+                      height: '60px',
+                      padding: '8px',
+                      backgroundColor: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      resize: 'vertical',
+                      fontFamily: 'inherit',
+                    }}
+                  />
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    用逗号分隔多个技能
                   </div>
                 </div>
 
