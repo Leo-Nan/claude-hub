@@ -9,7 +9,7 @@ interface AgentTreeProps {
 const STATUS_COLORS = {
   active: 'var(--success-color)',
   idle: 'var(--text-secondary)',
-  thinking: '#ffc107',
+  thinking: 'var(--warning-color)',
 };
 
 const STATUS_LABELS = {
