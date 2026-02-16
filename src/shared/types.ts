@@ -8,7 +8,6 @@ export interface Project {
   agents: Agent[];
   createdAt: string;
   lastOpened: string;
-  // 新增：收藏和标签
   isFavorite?: boolean;
   tags?: TagColor[];
 }
@@ -19,7 +18,6 @@ export interface Agent {
   type: 'researcher' | 'engineer' | 'reviewer';
   skills: string[];
   status: 'active' | 'idle' | 'thinking';
-  // 新增：规则和系统提示词
   rules?: string;
   systemPrompt?: string;
 }
