@@ -6,6 +6,8 @@ interface AgentCanvasProps {
   onStatusChange: (agentId: string, status: Agent['status']) => void;
   onSelectAgent: (agentId: string) => void;
   onUpdateAgent: (agentId: string, updates: Partial<Agent>) => void;
+  width?: number;
+  onWidthChange?: (width: number) => void;
 }
 
 const STATUS_COLORS = {
@@ -31,11 +33,58 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
   onStatusChange,
   onSelectAgent,
   onUpdateAgent,
+  width: initialWidth,
+  onWidthChange,
 }) => {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(true);
   const [editingRules, setEditingRules] = useState('');
   const [editingSystemPrompt, setEditingSystemPrompt] = useState('');
+  const [panelWidth, setPanelWidth] = useState(initialWidth || 360);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Sync panel width when initialWidth changes
+  useEffect(() => {
+    if (initialWidth) {
+      setPanelWidth(initialWidth);
+    }
+  }, [initialWidth]);
+
+  // Handle drag events
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        const newWidth = Math.max(280, Math.min(600, e.clientX));
+        setPanelWidth(newWidth);
+        if (onWidthChange) {
+          onWidthChange(newWidth);
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging, onWidthChange]);
 
   const selectedAgent = agents.find((a) => a.id === selectedAgentId);
 
@@ -65,12 +114,33 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
     <div
       style={{
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'row',
         height: '100%',
         backgroundColor: 'var(--bg-primary)',
-        borderLeft: '1px solid var(--border-color)',
       }}
     >
+      {/* Drag Handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        style={{
+          width: isDragging ? '6px' : '4px',
+          cursor: 'ew-resize',
+          backgroundColor: isDragging ? 'var(--accent-color)' : 'var(--border-color)',
+          transition: 'background-color 0.2s, width 0.2s',
+        }}
+        title="拖拽调整宽度"
+      />
+
+      {/* Main Content */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          width: panelWidth,
+          borderLeft: '1px solid var(--border-color)',
+        }}
+      >
       {/* Header */}
       <div
         style={{
@@ -477,6 +547,7 @@ const AgentCanvas: React.FC<AgentCanvasProps> = ({
           )}
         </div>
       )}
+    </div>
     </div>
   );
 };

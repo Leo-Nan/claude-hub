@@ -56,6 +56,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [agentCanvasWidth, setAgentCanvasWidth] = useState(360);
 
   // 初始化主题
   useEffect(() => {
@@ -319,6 +320,8 @@ function App() {
                 console.log('Select agent:', agentId);
               }}
               onUpdateAgent={handleUpdateAgent}
+              width={agentCanvasWidth}
+              onWidthChange={setAgentCanvasWidth}
             />
           )}
         </div>
